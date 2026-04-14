@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: sml-argus
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: argus-db
+          property: connectionString
+      - key: DISCORD_WEBHOOK_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+    healthCheckPath: /health
+    autoDeploy: true
+
+databases:
+  - name: argus-db
+    databaseName: argus
+    user: argus
+    plan: free
