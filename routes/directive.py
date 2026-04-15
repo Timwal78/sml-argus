@@ -1,17 +1,19 @@
 """
 ARGUS — Directive Route
 POST /directive         — runs a scan and returns a plain-English trade directive
-GET  /directive/{ticker} — quick directive from latest stored state
 
 This is the endpoint you actually READ. Everything else is background.
+Every scan pushes the trade directive to Discord automatically.
 """
 from __future__ import annotations
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from schemas.state import ScanRequest, ScanResponse, DataSource
 from core.engine import run_full_cycle
 from core.trade_directive import generate_directive, TradeDirective
+from integrations.discord_dispatcher import send_directive as discord_send_directive
 from app.config import get_settings
 from app.database import get_session
 
@@ -40,6 +42,7 @@ async def get_directive(
     - **Reasoning**: Why, in trader language
 
     ARGUS is the brain. You are the hands.
+    Every scan is pushed to Discord automatically.
     """
     ticker = request.ticker.upper()
     primary_tf = request.timeframes[0] if request.timeframes else "1d"
@@ -53,4 +56,10 @@ async def get_directive(
         alpha_vantage_key=request.alpha_vantage_key,
     )
 
-    return generate_directive(scan)
+    directive = generate_directive(scan)
+
+    # Push to Discord — every scan, not just escalated states
+    if settings.discord_webhook_url:
+        asyncio.create_task(discord_send_directive(directive))
+
+    return directive
