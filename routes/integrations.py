@@ -1,4 +1,4 @@
-﻿"""
+"""
 ARGUS — Integration Routes
 POST /webhook/pine          — ingest TradingView Pine alerts
 POST /intent/schwab/{ticker} — generate trade intent for Schwab bridge
@@ -10,6 +10,7 @@ from datetime import datetime
 from integrations.pine_webhook import validate_payload, map_to_features, extract_log_record, PineWebhookError
 from integrations.schwab_bridge import generate_trade_intent
 from integrations.discord_dispatcher import send_alert
+import httpx
 from schemas.webhook import PineWebhookPayload
 from schemas.trade_intent import TradeIntent
 from schemas.alert import AlertPayload
@@ -121,3 +122,43 @@ async def get_trade_intent(
     scan_result = await scan_ticker(request, session)
     intent = generate_trade_intent(scan_result)
     return intent
+
+
+@router.post(
+    "/discord/test",
+    summary="Send a test message to Discord to verify webhook connectivity",
+)
+async def test_discord():
+    """
+    Sends a plain-text + embed test message to verify the Discord webhook works.
+    """
+    url = settings.discord_webhook_url
+    if not url:
+        return {"success": False, "error": "DISCORD_WEBHOOK_URL not configured"}
+
+    test_message = {
+        "content": "⚡ **ARGUS Test Message** — If you see this, Discord is connected!",
+        "username": "ARGUS",
+        "embeds": [{
+            "title": "🟢 ARGUS Discord Connection Verified",
+            "description": "The Trade Command Center is connected to this channel.\n\nAll trade directives will appear here automatically when you scan tickers.",
+            "color": 0x00FF88,
+            "fields": [
+                {"name": "System", "value": "SML ARGUS v0.2.2", "inline": True},
+                {"name": "Status", "value": "✅ Online", "inline": True},
+                {"name": "Mode", "value": "Trade Directive + Pulse Radar", "inline": True},
+            ],
+            "footer": {"text": "ScriptMasterLabs — ARGUS Trade Command Center"},
+        }],
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, json=test_message)
+            if resp.status_code in (200, 204):
+                return {"success": True, "status_code": resp.status_code, "message": "Test message sent to Discord!"}
+            else:
+                return {"success": False, "status_code": resp.status_code, "error": resp.text[:200]}
+    except httpx.RequestError as e:
+        return {"success": False, "error": str(e)}
+

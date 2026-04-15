@@ -10,46 +10,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
         :root {
-            --bg-primary: #06060E;
-            --bg-secondary: #0D0D1A;
-            --bg-card: #111128;
-            --bg-card-hover: #16163A;
-            --border: rgba(255, 255, 255, 0.06);
-            --border-active: rgba(204, 68, 255, 0.3);
-            --text-primary: #E8E8F0;
-            --text-secondary: #8888AA;
-            --text-muted: #555577;
-            --accent: #CC44FF;
-            --accent2: #5B8CFF;
-            --green: #00FF88;
-            --amber: #FFD700;
-            --red: #FF3030;
-            --orange: #FF6600;
-            --pink: #FF0080;
-            --violet: #CC44FF;
-            --blue: #5B8CFF;
-            --font: 'Inter', -apple-system, sans-serif;
-            --mono: 'JetBrains Mono', monospace;
-            --radius: 12px;
-            --radius-lg: 16px;
+            --bg-primary: #06060E; --bg-secondary: #0D0D1A; --bg-card: #111128; --bg-card-hover: #16163A;
+            --border: rgba(255,255,255,0.06); --border-active: rgba(204,68,255,0.3);
+            --text-primary: #E8E8F0; --text-secondary: #8888AA; --text-muted: #555577;
+            --accent: #CC44FF; --accent2: #5B8CFF;
+            --green: #00FF88; --amber: #FFD700; --red: #FF3030; --orange: #FF6600;
+            --font: 'Inter', -apple-system, sans-serif; --mono: 'JetBrains Mono', monospace;
+            --radius: 12px; --radius-lg: 16px;
         }
-
         body { font-family: var(--font); background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
-
         .ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none;
             background: radial-gradient(ellipse 60% 40% at 20% 10%, rgba(204,68,255,0.04) 0%, transparent 60%),
                         radial-gradient(ellipse 50% 50% at 80% 90%, rgba(91,140,255,0.03) 0%, transparent 50%);
         }
-
         .scan-lines { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.012;
             background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px);
         }
-
         .app { position: relative; z-index: 2; max-width: 1400px; margin: 0 auto; }
 
-        /* ── Header ─────────────────────────────────────────────────────── */
+        /* Header */
         .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); }
         .header-brand { display: flex; align-items: center; gap: 12px; }
         .logo-mark { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: pulse 3s ease-in-out infinite; }
@@ -61,249 +41,110 @@
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
         .status-text { font-size: 12px; color: var(--text-secondary); font-family: var(--mono); }
 
-        /* ── Search ─────────────────────────────────────────────────────── */
-        .search { padding: 20px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        .search-input { flex: 1; min-width: 200px; max-width: 400px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; font-size: 15px; font-family: var(--mono); color: var(--text-primary); outline: none; transition: all 0.2s; text-transform: uppercase; }
+        /* Search + Controls */
+        .controls { padding: 20px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .search-input { flex: 1; min-width: 200px; max-width: 340px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; font-size: 15px; font-family: var(--mono); color: var(--text-primary); outline: none; transition: all 0.2s; text-transform: uppercase; }
         .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(204,68,255,0.15); }
         .search-input::placeholder { color: var(--text-muted); text-transform: none; }
-
         .btn { padding: 12px 24px; border-radius: var(--radius); font-family: var(--font); font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: all 0.2s; }
         .btn-scan { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
         .btn-scan:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(204,68,255,0.3); }
         .btn-scan:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-radar { background: linear-gradient(135deg, #FF6600, var(--amber)); color: #111; }
+        .btn-radar:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,200,0,0.3); }
+        .btn-discord-test { background: #5865F2; color: white; font-size: 12px; padding: 10px 16px; }
+        .btn-discord-test:hover { background: #4752C4; }
 
-        /* ── Directive Hero ─────────────────────────────────────────────── */
-        .directive-hero {
-            margin: 0 24px 16px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 28px 32px;
-            position: relative;
-            overflow: hidden;
-        }
+        /* Mode tabs */
+        .mode-tabs { padding: 0 24px; display: flex; gap: 0; margin-bottom: 16px; }
+        .mode-tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; letter-spacing: 0.5px; }
+        .mode-tab:hover { color: var(--text-secondary); }
+        .mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-        .directive-hero::before {
-            content: '';
-            position: absolute; top: 0; left: 0; right: 0; height: 3px;
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        }
-
+        /* Directive Hero */
+        .directive-hero { margin: 0 24px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px 32px; position: relative; overflow: hidden; }
         .directive-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-
         .directive-action-wrap { flex-shrink: 0; }
+        .directive-action { font-size: 32px; font-weight: 900; letter-spacing: 1px; font-family: var(--mono); line-height: 1.1; }
+        .directive-conviction { font-size: 13px; font-weight: 600; margin-top: 6px; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; }
+        .directive-ticker { font-size: 14px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1px; font-family: var(--mono); }
+        .directive-headline { flex: 1; min-width: 300px; font-size: 17px; line-height: 1.6; color: var(--text-secondary); padding-top: 4px; }
 
-        .directive-action {
-            font-size: 32px; font-weight: 900; letter-spacing: 1px;
-            font-family: var(--mono);
-            line-height: 1.1;
-        }
+        /* Levels Grid */
+        .levels-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+        .level-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; text-align: center; }
+        .level-label { font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+        .level-value { font-size: 22px; font-weight: 700; font-family: var(--mono); }
+        .level-value.green { color: var(--green); } .level-value.red { color: var(--red); } .level-value.amber { color: var(--amber); } .level-value.blue { color: var(--accent2); }
 
-        .directive-conviction {
-            font-size: 13px; font-weight: 600;
-            margin-top: 6px; letter-spacing: 1px;
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 4px 12px; border-radius: 20px;
-        }
-
-        .directive-ticker {
-            font-size: 14px; color: var(--text-muted); margin-top: 4px;
-            letter-spacing: 1px; font-family: var(--mono);
-        }
-
-        .directive-headline {
-            flex: 1; min-width: 300px;
-            font-size: 17px; line-height: 1.6;
-            color: var(--text-secondary);
-            padding-top: 4px;
-        }
-
-        /* ── Levels Grid ────────────────────────────────────────────────── */
-        .levels-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-
-        .level-box {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px 16px;
-            text-align: center;
-        }
-
-        .level-label {
-            font-size: 10px; color: var(--text-muted);
-            letter-spacing: 1.5px; text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-
-        .level-value {
-            font-size: 22px; font-weight: 700;
-            font-family: var(--mono);
-        }
-
-        .level-value.green { color: var(--green); }
-        .level-value.red { color: var(--red); }
-        .level-value.amber { color: var(--amber); }
-        .level-value.blue { color: var(--blue); }
-        .level-value.muted { color: var(--text-muted); }
-
-        /* ── Reasoning + Risk Row ───────────────────────────────────────── */
-        .detail-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            padding: 0 24px 16px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            transition: border-color 0.3s;
-        }
+        /* Cards */
+        .detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 24px 16px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; transition: border-color 0.3s; }
         .card:hover { border-color: var(--border-active); }
-
-        .card-title {
-            font-size: 11px; font-weight: 600;
-            color: var(--text-muted);
-            letter-spacing: 1.5px; text-transform: uppercase;
-            margin-bottom: 14px;
-            display: flex; align-items: center; gap: 8px;
-        }
-
-        .reasoning-text {
-            font-size: 14px; line-height: 1.8;
-            color: var(--text-secondary);
-        }
-
-        /* ── Risk Panel ─────────────────────────────────────────────────── */
-        .risk-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            font-size: 20px; font-weight: 800;
-            font-family: var(--mono);
-            margin-bottom: 12px;
-        }
-
-        .risk-note {
-            font-size: 13px; line-height: 1.6;
-            color: var(--text-muted);
-            margin-bottom: 14px;
-        }
-
-        .size-rec {
-            display: flex; align-items: center; gap: 10px;
-            background: var(--bg-secondary);
-            border-radius: var(--radius);
-            padding: 12px 16px;
-        }
-
+        .card-title { font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .reasoning-text { font-size: 14px; line-height: 1.8; color: var(--text-secondary); }
+        .risk-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 20px; font-weight: 800; font-family: var(--mono); margin-bottom: 12px; }
+        .risk-note { font-size: 13px; line-height: 1.6; color: var(--text-muted); margin-bottom: 14px; }
+        .size-rec { display: flex; align-items: center; gap: 10px; background: var(--bg-secondary); border-radius: var(--radius); padding: 12px 16px; }
         .size-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
         .size-value { font-size: 16px; font-weight: 700; font-family: var(--mono); margin-left: auto; }
-
-        /* ── Watch / Kill Lists ──────────────────────────────────────────── */
-        .list-item {
-            display: flex; align-items: flex-start; gap: 8px;
-            padding: 6px 0; font-size: 13px;
-            color: var(--text-secondary);
-        }
+        .list-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 13px; color: var(--text-secondary); }
         .list-icon { flex-shrink: 0; font-size: 12px; margin-top: 2px; }
 
-        /* ── Agent + Score Row ───────────────────────────────────────────── */
-        .bottom-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 16px;
-            padding: 0 24px 16px;
-        }
-
-        .agent-strip {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-        }
-
-        .agent-mini {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 12px 10px;
-            text-align: center;
-            transition: all 0.3s;
-        }
+        /* Bottom row */
+        .bottom-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; padding: 0 24px 16px; }
+        .agent-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .agent-mini { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 10px; text-align: center; transition: all 0.3s; }
         .agent-mini:hover { border-color: var(--border-active); transform: translateY(-2px); }
         .agent-mini-name { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
         .agent-mini-score { font-size: 22px; font-weight: 800; font-family: var(--mono); }
         .agent-mini-bar { width: 100%; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; margin-top: 6px; overflow: hidden; }
         .agent-mini-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.22,1,0.36,1); }
-
-        /* ── Score Summary ──────────────────────────────────────────────── */
-        .score-summary {
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-        }
-
-        .veil-number {
-            font-size: 56px; font-weight: 900;
-            font-family: var(--mono);
-            background: linear-gradient(135deg, var(--accent), var(--text-primary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text; line-height: 1;
-        }
-
+        .score-summary { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+        .veil-number { font-size: 56px; font-weight: 900; font-family: var(--mono); background: linear-gradient(135deg, var(--accent), var(--text-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1; }
         .veil-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; }
-        
-        .state-badge {
-            font-size: 12px; font-weight: 700;
-            padding: 4px 14px; border-radius: 20px;
-            letter-spacing: 1px;
-        }
-
-        /* ── Risk Bars ──────────────────────────────────────────────────── */
+        .state-badge { font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px; letter-spacing: 1px; }
         .risk-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .risk-bar-label { font-size: 10px; color: var(--text-muted); width: 70px; text-align: right; font-family: var(--mono); text-transform: uppercase; }
-        .risk-bar-track { flex: 1; height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px; overflow: hidden; }
-        .risk-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.22,1,0.36,1); }
-        .risk-bar-pct { font-size: 10px; color: var(--text-muted); width: 35px; font-family: var(--mono); }
 
-        /* ── Empty State ────────────────────────────────────────────────── */
+        /* ── Radar Results ──────────────────────────────────────────────── */
+        .radar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; padding: 0 24px 16px; }
+        .radar-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; position: relative; overflow: hidden; cursor: pointer; transition: all 0.2s; }
+        .radar-card:hover { border-color: var(--border-active); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .radar-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .radar-ticker { font-size: 18px; font-weight: 800; font-family: var(--mono); letter-spacing: 1px; }
+        .radar-source { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; letter-spacing: 1px; }
+        .radar-source.pinned { background: rgba(204,68,255,0.15); color: var(--accent); }
+        .radar-source.discovered { background: rgba(255,200,0,0.12); color: var(--amber); }
+        .radar-action { font-size: 16px; font-weight: 800; font-family: var(--mono); margin-bottom: 4px; }
+        .radar-headline { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        .radar-meta { display: flex; gap: 12px; margin-top: 8px; font-size: 11px; font-family: var(--mono); }
+        .radar-meta span { padding: 2px 8px; border-radius: 8px; background: var(--bg-secondary); }
+        .radar-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--radius) var(--radius) 0 0; }
+        .radar-error { font-size: 12px; color: var(--red); font-style: italic; }
+
+        /* Summary bar */
+        .sweep-summary { padding: 12px 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .sweep-stat { font-size: 13px; color: var(--text-secondary); font-family: var(--mono); }
+        .sweep-stat strong { color: var(--text-primary); }
+
+        /* Empty + Overlay + Footer */
         .empty { text-align: center; padding: 100px 20px; }
         .empty-icon { font-size: 64px; margin-bottom: 20px; opacity: 0.3; }
         .empty-title { font-size: 24px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; }
         .empty-sub { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-
-        /* ── Scanning Overlay ───────────────────────────────────────────── */
         .overlay { position: fixed; inset: 0; z-index: 200; background: rgba(6,6,14,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
         .overlay-ring { width: 48px; height: 48px; border: 3px solid transparent; border-top-color: var(--accent); border-right-color: var(--accent2); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .overlay-text { font-size: 14px; color: var(--text-secondary); margin-top: 16px; font-family: var(--mono); letter-spacing: 2px; }
-
-        /* ── Footer ─────────────────────────────────────────────────────── */
+        .overlay-sub { font-size: 12px; color: var(--text-muted); margin-top: 8px; font-family: var(--mono); }
         .footer { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
         .footer-text { font-size: 11px; color: var(--text-muted); }
-
-        /* ── Animations ─────────────────────────────────────────────────── */
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .anim { animation: fadeUp 0.4s ease-out forwards; opacity: 0; }
         .d1 { animation-delay: 0.05s; } .d2 { animation-delay: 0.1s; } .d3 { animation-delay: 0.15s; } .d4 { animation-delay: 0.2s; } .d5 { animation-delay: 0.25s; }
-
-        /* ── Responsive ─────────────────────────────────────────────────── */
-        @media (max-width: 900px) {
-            .detail-row, .bottom-row { grid-template-columns: 1fr; }
-            .agent-strip { grid-template-columns: repeat(3, 1fr); }
-            .directive-top { flex-direction: column; }
-            .directive-headline { min-width: auto; }
-            .levels-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 600px) {
-            .agent-strip { grid-template-columns: repeat(2, 1fr); }
-            .levels-grid { grid-template-columns: repeat(2, 1fr); }
-        }
+        @media (max-width: 900px) { .detail-row, .bottom-row { grid-template-columns: 1fr; } .agent-strip { grid-template-columns: repeat(3, 1fr); } .directive-top { flex-direction: column; } .directive-headline { min-width: auto; } .levels-grid { grid-template-columns: repeat(3, 1fr); } .radar-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) { .agent-strip { grid-template-columns: repeat(2, 1fr); } .levels-grid { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
@@ -325,21 +166,32 @@
             </div>
         </header>
 
-        <div class="search">
-            <input type="text" class="search-input" id="tickerInput" placeholder="Enter ticker — AMC, SPY, TSLA..." autocomplete="off" spellcheck="false" maxlength="10">
+        <div class="controls">
+            <input type="text" class="search-input" id="tickerInput" placeholder="Ticker — AMC, SPY, TSLA..." autocomplete="off" spellcheck="false" maxlength="10">
             <button class="btn btn-scan" id="scanBtn" onclick="runDirective()">⚡ SCAN</button>
+            <button class="btn btn-radar" id="radarBtn" onclick="runRadarSweep()">📡 RADAR SWEEP</button>
+            <button class="btn btn-discord-test" onclick="testDiscord()">🔔 Test Discord</button>
+        </div>
+
+        <div class="mode-tabs">
+            <div class="mode-tab active" id="tabSingle" onclick="switchTab('single')">Single Scan</div>
+            <div class="mode-tab" id="tabRadar" onclick="switchTab('radar')">Pulse Radar</div>
         </div>
 
         <div id="content">
             <div class="empty">
                 <div class="empty-icon">👁️</div>
                 <div class="empty-title">ARGUS is the brain. You are the hands.</div>
-                <div class="empty-sub">Enter a ticker. The organism will tell you what to do.<br>You decide if you pull the trigger.</div>
+                <div class="empty-sub">
+                    <b>⚡ SCAN</b> — type a ticker, get a trade directive<br>
+                    <b>📡 RADAR SWEEP</b> — auto-scan AMC, GME, IWM, SPY + discover movers<br><br>
+                    You decide if you pull the trigger.
+                </div>
             </div>
         </div>
 
         <footer class="footer">
-            <span class="footer-text">SML ARGUS v0.2.1 — Trade Directive Engine</span>
+            <span class="footer-text">SML ARGUS v0.2.2 — Trade Directive + Pulse Radar</span>
             <span class="footer-text">© ScriptMasterLabs</span>
         </footer>
     </div>
@@ -347,59 +199,86 @@
     <div class="overlay" id="overlay" style="display:none;">
         <div class="overlay-ring"></div>
         <div class="overlay-text" id="overlayText">SCANNING...</div>
+        <div class="overlay-sub" id="overlaySub"></div>
     </div>
 
     <script>
         const $ = id => document.getElementById(id);
         let scanning = false;
+        let currentTab = 'single';
 
         $('tickerInput').addEventListener('keydown', e => { if (e.key === 'Enter') runDirective(); });
 
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+            $(`tab${tab === 'single' ? 'Single' : 'Radar'}`).classList.add('active');
+        }
+
+        // ── Discord Test ───────────────────────────────────────────────
+        async function testDiscord() {
+            try {
+                const resp = await fetch('/discord/test', { method: 'POST' });
+                const data = await resp.json();
+                alert(data.success ? '✅ Discord test message sent! Check your channel.' : '❌ Discord failed: ' + data.error);
+            } catch (e) {
+                alert('❌ Could not reach server: ' + e.message);
+            }
+        }
+
+        // ── Single Scan ────────────────────────────────────────────────
         async function runDirective() {
             const ticker = $('tickerInput').value.trim().toUpperCase();
             if (!ticker || scanning) return;
             scanning = true;
+            switchTab('single');
 
-            // Show overlay
             $('overlay').style.display = 'flex';
+            $('overlaySub').textContent = '';
             let dots = 0;
-            const phases = [
-                `ANALYZING ${ticker} MARKET DATA`,
-                'RUNNING 5-AGENT INTELLIGENCE',
-                'DEBATE ENGINE RESOLVING',
-                'GENERATING TRADE DIRECTIVE',
-            ];
+            const phases = [`ANALYZING ${ticker}`, '5-AGENT INTELLIGENCE', 'DEBATE ENGINE', 'GENERATING DIRECTIVE'];
             let phase = 0;
-            const iv = setInterval(() => {
-                dots = (dots + 1) % 4;
-                $('overlayText').textContent = phases[phase % phases.length] + '.'.repeat(dots);
-                if (dots === 0) phase++;
-            }, 350);
+            const iv = setInterval(() => { dots = (dots + 1) % 4; $('overlayText').textContent = phases[phase % phases.length] + '.'.repeat(dots); if (dots === 0) phase++; }, 350);
 
             try {
-                const resp = await fetch('/directive', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ticker, timeframes: ['15m', '1h', '1d'] }),
-                });
+                const resp = await fetch('/directive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticker, timeframes: ['15m', '1h', '1d'] }) });
                 if (!resp.ok) throw new Error(`Failed: ${resp.status}`);
-                const d = await resp.json();
-                renderDirective(d);
-            } catch (err) {
-                $('content').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Scan Failed</div><div class="empty-sub">${err.message}</div></div>`;
-            } finally {
-                clearInterval(iv);
-                $('overlay').style.display = 'none';
-                scanning = false;
-            }
+                renderDirective(await resp.json());
+            } catch (err) { $('content').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Scan Failed</div><div class="empty-sub">${err.message}</div></div>`; }
+            finally { clearInterval(iv); $('overlay').style.display = 'none'; scanning = false; }
         }
 
+        // ── Radar Sweep ────────────────────────────────────────────────
+        async function runRadarSweep() {
+            if (scanning) return;
+            scanning = true;
+            switchTab('radar');
+
+            $('overlay').style.display = 'flex';
+            $('overlayText').textContent = 'PULSE RADAR SWEEP';
+            $('overlaySub').textContent = 'Scanning pinned core + discovering world movers...';
+
+            const tickers = ['AMC', 'GME', 'IWM', 'SPY'];
+            let progress = 0;
+            const iv = setInterval(() => {
+                progress++;
+                const phase = progress < 4 ? `Scanning ${tickers[progress-1] || ''}...` : progress < 8 ? 'World fetch: discovering movers...' : `Scanning discovered ticker ${progress - 7}...`;
+                $('overlaySub').textContent = phase;
+                let dots = progress % 4;
+                $('overlayText').textContent = 'PULSE RADAR SWEEP' + '.'.repeat(dots);
+            }, 2500);
+
+            try {
+                const resp = await fetch('/radar/sweep?max_discovered=6&send_discord=true', { method: 'POST' });
+                if (!resp.ok) throw new Error(`Sweep failed: ${resp.status}`);
+                renderRadarSweep(await resp.json());
+            } catch (err) { $('content').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Radar Sweep Failed</div><div class="empty-sub">${err.message}</div></div>`; }
+            finally { clearInterval(iv); $('overlay').style.display = 'none'; scanning = false; }
+        }
+
+        // ── Render Single Directive ────────────────────────────────────
         function renderDirective(d) {
-            const COLORS = {
-                bullish: '#00FF88', unstable_bullish: '#FFD700', bearish: '#FF3030',
-                unstable_bearish: '#FF6600', neutral: '#8888AA', fractured: '#CC44FF',
-                stable: '#00FF88', fragile: '#FFD700', distorted: '#CC44FF', breaking: '#FF3030',
-            };
+            const COLORS = { bullish: '#00FF88', unstable_bullish: '#FFD700', bearish: '#FF3030', unstable_bearish: '#FF6600', neutral: '#8888AA', fractured: '#CC44FF', stable: '#00FF88', fragile: '#FFD700', distorted: '#CC44FF', breaking: '#FF3030' };
             const stateColor = COLORS[d.state] || '#555577';
             const biasColor = COLORS[d.bias] || '#8888AA';
             const riskColors = { LOW: '#00FF88', MODERATE: '#FFD700', HIGH: '#FF6600', EXTREME: '#FF3030' };
@@ -408,7 +287,6 @@
             const sizeColors = { FULL: '#00FF88', HALF: '#FFD700', QUARTER: '#FF6600', SKIP: '#555577' };
 
             $('content').innerHTML = `
-                <!-- ═══ THE CALL ═══ -->
                 <div class="directive-hero anim d1" style="border-color: ${d.action_color}33">
                     <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${d.action_color};border-radius:16px 16px 0 0"></div>
                     <div class="directive-top">
@@ -421,61 +299,31 @@
                         </div>
                         <div class="directive-headline">${d.headline}</div>
                     </div>
-
-                    <!-- Levels -->
                     <div class="levels-grid">
                         ${d.entry_above ? `<div class="level-box"><div class="level-label">Entry Above</div><div class="level-value green">$${d.entry_above.toFixed(2)}</div></div>` : ''}
                         ${d.stop_loss ? `<div class="level-box"><div class="level-label">Stop Loss</div><div class="level-value red">$${d.stop_loss.toFixed(2)}</div></div>` : ''}
                         ${d.target_1 ? `<div class="level-box"><div class="level-label">Target 1</div><div class="level-value amber">$${d.target_1.toFixed(2)}</div></div>` : ''}
                         ${d.target_2 ? `<div class="level-box"><div class="level-label">Target 2</div><div class="level-value blue">$${d.target_2.toFixed(2)}</div></div>` : ''}
-                        <div class="level-box">
-                            <div class="level-label">Risk Grade</div>
-                            <div class="level-value" style="color:${riskColor}">${d.risk_emoji} ${d.risk_grade}</div>
-                        </div>
-                        <div class="level-box">
-                            <div class="level-label">Position Size</div>
-                            <div class="level-value" style="color:${sizeColors[d.position_size] || '#888'}">${d.position_size}</div>
-                        </div>
+                        <div class="level-box"><div class="level-label">Risk Grade</div><div class="level-value" style="color:${riskColor}">${d.risk_emoji} ${d.risk_grade}</div></div>
+                        <div class="level-box"><div class="level-label">Position Size</div><div class="level-value" style="color:${sizeColors[d.position_size] || '#888'}">${d.position_size}</div></div>
                     </div>
                 </div>
-
-                <!-- ═══ WHY + RISK ═══ -->
                 <div class="detail-row">
                     <div class="card anim d2">
                         <div class="card-title">💡 Why This Call</div>
                         <div class="reasoning-text">${d.reasoning}</div>
-                        ${d.watch_for.length ? `
-                            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-                                <div class="card-title">👀 Watch For</div>
-                                ${d.watch_for.map(w => `<div class="list-item"><span class="list-icon">▸</span>${w}</div>`).join('')}
-                            </div>
-                        ` : ''}
+                        ${d.watch_for.length ? `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)"><div class="card-title">👀 Watch For</div>${d.watch_for.map(w => `<div class="list-item"><span class="list-icon">▸</span>${w}</div>`).join('')}</div>` : ''}
                     </div>
                     <div class="card anim d3">
                         <div class="card-title">⚠️ Risk Assessment</div>
                         <div class="risk-badge" style="color:${riskColor}">${d.risk_emoji} ${d.risk_grade} RISK</div>
                         <div class="risk-note">${d.risk_note}</div>
-                        <div class="size-rec">
-                            <div>
-                                <div class="size-label">Recommended Size</div>
-                            </div>
-                            <div class="size-value" style="color:${sizeColors[d.position_size] || '#888'}">${d.position_size}</div>
-                        </div>
-                        ${d.kill_conditions.length ? `
-                            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-                                <div class="card-title">🚫 Kill Conditions</div>
-                                ${d.kill_conditions.map(k => `<div class="list-item"><span class="list-icon" style="color:var(--red)">✕</span>${k}</div>`).join('')}
-                            </div>
-                        ` : ''}
+                        <div class="size-rec"><div><div class="size-label">Recommended Size</div></div><div class="size-value" style="color:${sizeColors[d.position_size] || '#888'}">${d.position_size}</div></div>
+                        ${d.kill_conditions.length ? `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)"><div class="card-title">🚫 Kill Conditions</div>${d.kill_conditions.map(k => `<div class="list-item"><span class="list-icon" style="color:var(--red)">✕</span>${k}</div>`).join('')}</div>` : ''}
                     </div>
                 </div>
-
-                <!-- ═══ AGENTS + SCORE ═══ -->
                 <div class="bottom-row">
-                    <div class="card anim d4">
-                        <div class="card-title">🧠 Agent Intelligence (what the organism sees)</div>
-                        <div class="agent-strip" id="agentStrip"></div>
-                    </div>
+                    <div class="card anim d4"><div class="card-title">🧠 Agent Intelligence</div><div class="agent-strip" id="agentStrip"></div></div>
                     <div class="card anim d5">
                         <div class="score-summary">
                             <div class="veil-label">Veil Score</div>
@@ -488,23 +336,89 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-
-            // Populate agent strip from the scan data we stored
+                </div>`;
             loadAgents(d.ticker);
         }
 
-        // Load agent details from a quick scan check
+        // ── Render Radar Sweep ─────────────────────────────────────────
+        function renderRadarSweep(sweep) {
+            const all = [...sweep.pinned_results, ...sweep.discovered_results].filter(r => r.directive);
+            // Sort: actionable first, then by veil score
+            all.sort((a, b) => {
+                const aScore = actionScore(a.directive);
+                const bScore = actionScore(b.directive);
+                if (aScore !== bScore) return bScore - aScore;
+                return b.directive.veil_score - a.directive.veil_score;
+            });
+
+            const elapsed = sweep.completed_at && sweep.started_at ? ((new Date(sweep.completed_at) - new Date(sweep.started_at))/1000).toFixed(0) : '?';
+
+            let html = `
+                <div class="sweep-summary anim d1">
+                    <div class="sweep-stat">📡 <strong>${sweep.total_scanned}</strong> scanned</div>
+                    <div class="sweep-stat">🎯 <strong>${sweep.total_actionable}</strong> actionable</div>
+                    <div class="sweep-stat">🌍 <strong>${sweep.discovery_candidates.length}</strong> discovered</div>
+                    <div class="sweep-stat">⏱ <strong>${elapsed}s</strong></div>
+                </div>
+                <div class="radar-grid">
+            `;
+
+            all.forEach((r, i) => {
+                const d = r.directive;
+                const actionColor = d.action_color || '#555577';
+                const riskColors = { LOW: '#00FF88', MODERATE: '#FFD700', HIGH: '#FF6600', EXTREME: '#FF3030' };
+                const riskColor = riskColors[d.risk_grade] || '#888';
+
+                html += `
+                    <div class="radar-card anim d${Math.min(i+1, 5)}" onclick="quickScan('${d.ticker}')">
+                        <div class="radar-bar" style="background:${actionColor}"></div>
+                        <div class="radar-card-top">
+                            <div class="radar-ticker" style="color:${actionColor}">${d.ticker}</div>
+                            <span class="radar-source ${r.source}">${r.source.toUpperCase()}</span>
+                        </div>
+                        <div class="radar-action" style="color:${actionColor}">${d.action}</div>
+                        <div class="radar-headline">${d.headline.substring(0, 120)}${d.headline.length > 120 ? '...' : ''}</div>
+                        <div class="radar-meta">
+                            <span style="color:${riskColor}">${d.risk_emoji} ${d.risk_grade}</span>
+                            <span>Score: ${d.veil_score.toFixed(0)}</span>
+                            <span>${d.conviction_pct}%</span>
+                            <span>${d.position_size}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Show errors
+            const errors = [...sweep.pinned_results, ...sweep.discovered_results].filter(r => r.error);
+            if (errors.length) {
+                html += errors.map(r => `<div class="radar-card"><div class="radar-ticker" style="color:var(--red)">${r.ticker}</div><div class="radar-error">${r.error}</div></div>`).join('');
+            }
+
+            html += '</div>';
+            $('content').innerHTML = html;
+        }
+
+        function actionScore(d) {
+            if (d.action.includes('BUY') && !d.action.includes('paper')) return 5;
+            if (d.action.includes('BUY')) return 4;
+            if (d.action.includes('SELL')) return 4;
+            if (d.action.includes('WAIT')) return 2;
+            if (d.action.includes('REDUCE')) return 3;
+            return 0;
+        }
+
+        function quickScan(ticker) {
+            $('tickerInput').value = ticker;
+            runDirective();
+        }
+
         async function loadAgents(ticker) {
             const strip = document.getElementById('agentStrip');
             if (!strip) return;
-
             try {
                 const resp = await fetch(`/chart/${ticker}`);
                 if (!resp.ok) return;
                 const chart = await resp.json();
-
                 const agents = [
                     { name: 'Pressure', score: chart.agent_pressure, color: '#FF6B6B', icon: '💨' },
                     { name: 'Structure', score: chart.agent_structure, color: '#4ECDC4', icon: '🏗️' },
@@ -512,18 +426,8 @@
                     { name: 'Anomaly', score: chart.agent_anomaly, color: '#CC44FF', icon: '👁️' },
                     { name: 'Cycle', score: chart.agent_cycle, color: '#5B8CFF', icon: '🔄' },
                 ];
-
-                strip.innerHTML = agents.map(a => `
-                    <div class="agent-mini">
-                        <div style="font-size:16px">${a.icon}</div>
-                        <div class="agent-mini-name">${a.name}</div>
-                        <div class="agent-mini-score" style="color:${a.color}">${a.score.toFixed(0)}</div>
-                        <div class="agent-mini-bar"><div class="agent-mini-fill" style="width:${a.score}%;background:${a.color}"></div></div>
-                    </div>
-                `).join('');
-            } catch (e) {
-                strip.innerHTML = '<div style="color:var(--text-muted);font-size:12px;grid-column:1/-1;text-align:center">Agent data loading...</div>';
-            }
+                strip.innerHTML = agents.map(a => `<div class="agent-mini"><div style="font-size:16px">${a.icon}</div><div class="agent-mini-name">${a.name}</div><div class="agent-mini-score" style="color:${a.color}">${a.score.toFixed(0)}</div><div class="agent-mini-bar"><div class="agent-mini-fill" style="width:${a.score}%;background:${a.color}"></div></div></div>`).join('');
+            } catch (e) { strip.innerHTML = '<div style="color:var(--text-muted);font-size:12px;grid-column:1/-1;text-align:center">Loading...</div>'; }
         }
     </script>
 </body>
