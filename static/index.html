@@ -3,29 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARGUS — Command Center | ScriptMasterLabs</title>
-    <meta name="description" content="ARGUS Command Center — Real-time market intelligence organism. See the hidden market state before the move becomes obvious.">
+    <title>ARGUS — Trade Command Center | ScriptMasterLabs</title>
+    <meta name="description" content="ARGUS Trade Command Center — The organism tells you what to trade. You decide if you pull the trigger.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ── CSS Reset & Variables ─────────────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        
+
         :root {
             --bg-primary: #06060E;
             --bg-secondary: #0D0D1A;
             --bg-card: #111128;
             --bg-card-hover: #16163A;
-            --bg-glass: rgba(17, 17, 40, 0.7);
             --border: rgba(255, 255, 255, 0.06);
             --border-active: rgba(204, 68, 255, 0.3);
             --text-primary: #E8E8F0;
             --text-secondary: #8888AA;
             --text-muted: #555577;
-            --accent-primary: #CC44FF;
-            --accent-secondary: #5B8CFF;
-            --accent-glow: rgba(204, 68, 255, 0.15);
+            --accent: #CC44FF;
+            --accent2: #5B8CFF;
             --green: #00FF88;
             --amber: #FFD700;
             --red: #FF3030;
@@ -33,156 +30,135 @@
             --pink: #FF0080;
             --violet: #CC44FF;
             --blue: #5B8CFF;
-            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
+            --font: 'Inter', -apple-system, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
             --radius: 12px;
             --radius-lg: 16px;
-            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-            --shadow-glow: 0 0 30px rgba(204, 68, 255, 0.08);
         }
 
-        body {
-            font-family: var(--font-main);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
+        body { font-family: var(--font); background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+
+        .ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: radial-gradient(ellipse 60% 40% at 20% 10%, rgba(204,68,255,0.04) 0%, transparent 60%),
+                        radial-gradient(ellipse 50% 50% at 80% 90%, rgba(91,140,255,0.03) 0%, transparent 50%);
         }
 
-        /* ── Ambient Background ───────────────────────────────────────────── */
-        .ambient-bg {
-            position: fixed; inset: 0; z-index: 0; pointer-events: none;
-            background: 
-                radial-gradient(ellipse 60% 40% at 20% 10%, rgba(204, 68, 255, 0.04) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 50% at 80% 90%, rgba(91, 140, 255, 0.03) 0%, transparent 50%),
-                radial-gradient(ellipse 40% 30% at 50% 50%, rgba(0, 255, 136, 0.015) 0%, transparent 40%);
-        }
-
-        /* ── Scan Lines Effect ────────────────────────────────────────────── */
-        .scan-lines {
-            position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.015;
+        .scan-lines { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.012;
             background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px);
         }
 
-        /* ── Layout ───────────────────────────────────────────────────────── */
-        .app { position: relative; z-index: 2; }
-        
-        .header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(20px);
-            background: rgba(6, 6, 14, 0.8);
-            position: sticky; top: 0; z-index: 100;
-        }
+        .app { position: relative; z-index: 2; max-width: 1400px; margin: 0 auto; }
 
-        .header-brand {
-            display: flex; align-items: center; gap: 12px;
-        }
-
-        .logo-mark {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800;
-            animation: logoPulse 3s ease-in-out infinite;
-        }
-
-        @keyframes logoPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(204, 68, 255, 0.3); }
-            50% { box-shadow: 0 0 20px 4px rgba(204, 68, 255, 0.15); }
-        }
-
+        /* ── Header ─────────────────────────────────────────────────────── */
+        .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+        .header-brand { display: flex; align-items: center; gap: 12px; }
+        .logo-mark { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; animation: pulse 3s ease-in-out infinite; }
+        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(204,68,255,0.3); } 50% { box-shadow: 0 0 20px 4px rgba(204,68,255,0.15); } }
         .logo-text { font-weight: 800; font-size: 18px; letter-spacing: 2px; }
         .logo-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 3px; text-transform: uppercase; }
+        .status { display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 2s ease-in-out infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .status-text { font-size: 12px; color: var(--text-secondary); font-family: var(--mono); }
 
-        .header-status {
-            display: flex; align-items: center; gap: 16px;
-        }
+        /* ── Search ─────────────────────────────────────────────────────── */
+        .search { padding: 20px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .search-input { flex: 1; min-width: 200px; max-width: 400px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; font-size: 15px; font-family: var(--mono); color: var(--text-primary); outline: none; transition: all 0.2s; text-transform: uppercase; }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(204,68,255,0.15); }
+        .search-input::placeholder { color: var(--text-muted); text-transform: none; }
 
-        .status-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 8px var(--green);
-            animation: statusBlink 2s ease-in-out infinite;
-        }
+        .btn { padding: 12px 24px; border-radius: var(--radius); font-family: var(--font); font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn-scan { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+        .btn-scan:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(204,68,255,0.3); }
+        .btn-scan:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        @keyframes statusBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        .status-text { font-size: 12px; color: var(--text-secondary); font-family: var(--font-mono); }
-
-        /* ── Search Bar ───────────────────────────────────────────────────── */
-        .search-container {
-            padding: 20px 24px;
-            display: flex; gap: 12px; align-items: center;
-        }
-
-        .search-input {
-            flex: 1; max-width: 400px;
+        /* ── Directive Hero ─────────────────────────────────────────────── */
+        .directive-hero {
+            margin: 0 24px 16px;
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 12px 16px;
-            font-size: 15px; font-family: var(--font-mono);
-            color: var(--text-primary);
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            border-radius: var(--radius-lg);
+            padding: 28px 32px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .search-input:focus {
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px var(--accent-glow);
+        .directive-hero::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         }
 
-        .search-input::placeholder { color: var(--text-muted); }
+        .directive-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 
-        .btn {
-            padding: 12px 24px;
-            border-radius: var(--radius);
-            font-family: var(--font-main);
-            font-weight: 600; font-size: 14px;
-            cursor: pointer; border: none;
-            transition: all 0.2s;
-            position: relative; overflow: hidden;
+        .directive-action-wrap { flex-shrink: 0; }
+
+        .directive-action {
+            font-size: 32px; font-weight: 900; letter-spacing: 1px;
+            font-family: var(--mono);
+            line-height: 1.1;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: white;
+        .directive-conviction {
+            font-size: 13px; font-weight: 600;
+            margin-top: 6px; letter-spacing: 1px;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 20px;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(204, 68, 255, 0.3);
+        .directive-ticker {
+            font-size: 14px; color: var(--text-muted); margin-top: 4px;
+            letter-spacing: 1px; font-family: var(--mono);
         }
 
-        .btn-primary:active { transform: translateY(0); }
-
-        .btn-primary:disabled {
-            opacity: 0.5; cursor: not-allowed; transform: none;
-        }
-
-        .btn-secondary {
-            background: var(--bg-card);
+        .directive-headline {
+            flex: 1; min-width: 300px;
+            font-size: 17px; line-height: 1.6;
             color: var(--text-secondary);
-            border: 1px solid var(--border);
+            padding-top: 4px;
         }
 
-        .btn-secondary:hover {
-            border-color: var(--accent-primary);
-            color: var(--text-primary);
-        }
-
-        /* ── Main Grid ────────────────────────────────────────────────────── */
-        .main-grid {
+        /* ── Levels Grid ────────────────────────────────────────────────── */
+        .levels-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .level-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            text-align: center;
+        }
+
+        .level-label {
+            font-size: 10px; color: var(--text-muted);
+            letter-spacing: 1.5px; text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .level-value {
+            font-size: 22px; font-weight: 700;
+            font-family: var(--mono);
+        }
+
+        .level-value.green { color: var(--green); }
+        .level-value.red { color: var(--red); }
+        .level-value.amber { color: var(--amber); }
+        .level-value.blue { color: var(--blue); }
+        .level-value.muted { color: var(--text-muted); }
+
+        /* ── Reasoning + Risk Row ───────────────────────────────────────── */
+        .detail-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 16px;
-            padding: 0 24px 24px;
+            padding: 0 24px 16px;
         }
 
         .card {
@@ -190,944 +166,364 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 20px;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            transition: border-color 0.3s;
         }
-
-        .card:hover {
-            border-color: var(--border-active);
-            box-shadow: var(--shadow-glow);
-        }
-
-        .card-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 16px;
-        }
+        .card:hover { border-color: var(--border-active); }
 
         .card-title {
-            font-size: 12px; font-weight: 600;
-            color: var(--text-secondary);
+            font-size: 11px; font-weight: 600;
+            color: var(--text-muted);
             letter-spacing: 1.5px; text-transform: uppercase;
-        }
-
-        .card-badge {
-            font-size: 10px; font-weight: 600;
-            padding: 3px 8px; border-radius: 20px;
-            letter-spacing: 0.5px;
-        }
-
-        /* ── Veil Gauge ───────────────────────────────────────────────────── */
-        .gauge-container { grid-column: 1; }
-        
-        .gauge-wrap {
-            display: flex; flex-direction: column; align-items: center;
-            padding: 10px 0;
-        }
-
-        .gauge-svg { width: 220px; height: 130px; }
-
-        .gauge-value {
-            font-size: 48px; font-weight: 800;
-            font-family: var(--font-mono);
-            margin-top: -8px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--text-primary));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .gauge-label {
-            font-size: 13px; color: var(--text-secondary);
-            margin-top: 4px; font-weight: 500;
-        }
-
-        .gauge-state {
-            font-size: 14px; font-weight: 700;
-            padding: 4px 16px; border-radius: 20px;
-            margin-top: 12px; letter-spacing: 1px;
-        }
-
-        /* ── Agent Radar ──────────────────────────────────────────────────── */
-        .radar-container { grid-column: 2; }
-        
-        .radar-svg { width: 100%; max-width: 280px; margin: 0 auto; display: block; }
-
-        .radar-label {
-            font-size: 11px; font-family: var(--font-mono);
-            fill: var(--text-secondary);
-        }
-
-        .radar-grid { stroke: var(--border); stroke-width: 0.5; fill: none; }
-        
-        .radar-shape {
-            fill: rgba(204, 68, 255, 0.15);
-            stroke: var(--accent-primary);
-            stroke-width: 2;
-            transition: all 0.6s ease;
-        }
-
-        .radar-dot {
-            fill: var(--accent-primary);
-            filter: drop-shadow(0 0 4px var(--accent-primary));
-        }
-
-        /* ── Status Panel ─────────────────────────────────────────────────── */
-        .status-panel { grid-column: 3; }
-
-        .status-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .status-row:last-child { border-bottom: none; }
-
-        .status-key {
-            font-size: 12px; color: var(--text-muted);
-            letter-spacing: 0.5px; text-transform: uppercase;
-        }
-
-        .status-val {
-            font-size: 14px; font-weight: 600;
-            font-family: var(--font-mono);
-        }
-
-        .status-val.bullish { color: var(--green); }
-        .status-val.bearish { color: var(--red); }
-        .status-val.unstable { color: var(--amber); }
-        .status-val.fractured { color: var(--violet); }
-        .status-val.neutral { color: var(--text-secondary); }
-        .status-val.stable { color: var(--green); }
-        .status-val.fragile { color: var(--amber); }
-        .status-val.distorted { color: var(--violet); }
-        .status-val.breaking { color: var(--red); }
-
-        /* ── Event Risk Bars ──────────────────────────────────────────────── */
-        .risk-bar-wrap {
+            margin-bottom: 14px;
             display: flex; align-items: center; gap: 8px;
-            margin-bottom: 8px;
         }
 
-        .risk-label {
-            font-size: 11px; color: var(--text-muted);
-            width: 80px; text-align: right;
-            font-family: var(--font-mono);
-        }
-
-        .risk-track {
-            flex: 1; height: 6px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 3px; overflow: hidden;
-        }
-
-        .risk-fill {
-            height: 100%; border-radius: 3px;
-            transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .risk-pct {
-            font-size: 11px; color: var(--text-secondary);
-            width: 40px; font-family: var(--font-mono);
-        }
-
-        /* ── Briefing Panel ───────────────────────────────────────────────── */
-        .briefing-panel {
-            grid-column: 1 / -1;
-        }
-
-        .briefing-text {
-            font-size: 14px; line-height: 1.75;
+        .reasoning-text {
+            font-size: 14px; line-height: 1.8;
             color: var(--text-secondary);
-            font-style: italic;
-            padding: 12px 16px;
-            border-left: 3px solid var(--accent-primary);
-            background: rgba(204, 68, 255, 0.03);
-            border-radius: 0 var(--radius) var(--radius) 0;
         }
 
-        /* ── Agent Detail Grid ────────────────────────────────────────────── */
-        .agent-grid {
-            grid-column: 1 / -1;
+        /* ── Risk Panel ─────────────────────────────────────────────────── */
+        .risk-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 20px; font-weight: 800;
+            font-family: var(--mono);
+            margin-bottom: 12px;
+        }
+
+        .risk-note {
+            font-size: 13px; line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .size-rec {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+        }
+
+        .size-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+        .size-value { font-size: 16px; font-weight: 700; font-family: var(--mono); margin-left: auto; }
+
+        /* ── Watch / Kill Lists ──────────────────────────────────────────── */
+        .list-item {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 6px 0; font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .list-icon { flex-shrink: 0; font-size: 12px; margin-top: 2px; }
+
+        /* ── Agent + Score Row ───────────────────────────────────────────── */
+        .bottom-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            padding: 0 24px 16px;
+        }
+
+        .agent-strip {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
+            gap: 10px;
         }
 
-        .agent-card {
+        .agent-mini {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 16px;
+            padding: 12px 10px;
             text-align: center;
             transition: all 0.3s;
         }
+        .agent-mini:hover { border-color: var(--border-active); transform: translateY(-2px); }
+        .agent-mini-name { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+        .agent-mini-score { font-size: 22px; font-weight: 800; font-family: var(--mono); }
+        .agent-mini-bar { width: 100%; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+        .agent-mini-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.22,1,0.36,1); }
 
-        .agent-card:hover {
-            border-color: var(--border-active);
-            transform: translateY(-2px);
+        /* ── Score Summary ──────────────────────────────────────────────── */
+        .score-summary {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
         }
 
-        .agent-name {
-            font-size: 11px; color: var(--text-muted);
-            letter-spacing: 1px; text-transform: uppercase;
-            margin-bottom: 8px;
+        .veil-number {
+            font-size: 56px; font-weight: 900;
+            font-family: var(--mono);
+            background: linear-gradient(135deg, var(--accent), var(--text-primary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; line-height: 1;
         }
 
-        .agent-score {
-            font-size: 28px; font-weight: 800;
-            font-family: var(--font-mono);
+        .veil-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; }
+        
+        .state-badge {
+            font-size: 12px; font-weight: 700;
+            padding: 4px 14px; border-radius: 20px;
+            letter-spacing: 1px;
         }
 
-        .agent-bar {
-            width: 100%; height: 4px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 2px; margin-top: 10px;
-            overflow: hidden;
-        }
+        /* ── Risk Bars ──────────────────────────────────────────────────── */
+        .risk-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .risk-bar-label { font-size: 10px; color: var(--text-muted); width: 70px; text-align: right; font-family: var(--mono); text-transform: uppercase; }
+        .risk-bar-track { flex: 1; height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px; overflow: hidden; }
+        .risk-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.22,1,0.36,1); }
+        .risk-bar-pct { font-size: 10px; color: var(--text-muted); width: 35px; font-family: var(--mono); }
 
-        .agent-bar-fill {
-            height: 100%; border-radius: 2px;
-            transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-        }
+        /* ── Empty State ────────────────────────────────────────────────── */
+        .empty { text-align: center; padding: 100px 20px; }
+        .empty-icon { font-size: 64px; margin-bottom: 20px; opacity: 0.3; }
+        .empty-title { font-size: 24px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; }
+        .empty-sub { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
 
-        .agent-thesis {
-            font-size: 11px; color: var(--text-muted);
-            margin-top: 8px; line-height: 1.4;
-        }
-
-        /* ── Timeline ─────────────────────────────────────────────────────── */
-        .timeline-panel {
-            grid-column: 1 / -1;
-        }
-
-        .timeline-container {
-            overflow-x: auto;
-            padding: 10px 0;
-        }
-
-        .timeline-chart {
-            display: flex; align-items: flex-end;
-            gap: 2px; min-width: 100%;
-            height: 120px;
-        }
-
-        .timeline-bar {
-            flex: 1; min-width: 6px;
-            border-radius: 3px 3px 0 0;
-            transition: all 0.3s;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .timeline-bar:hover {
-            opacity: 0.8;
-            transform: scaleY(1.05);
-            transform-origin: bottom;
-        }
-
-        .timeline-bar:hover::after {
-            content: attr(data-tooltip);
-            position: absolute; bottom: 105%;
-            left: 50%; transform: translateX(-50%);
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 4px 8px; border-radius: 6px;
-            font-size: 10px; white-space: nowrap;
-            color: var(--text-primary);
-            z-index: 10;
-        }
-
-        /* ── Trigger Map ──────────────────────────────────────────────────── */
-        .trigger-panel { grid-column: 1 / 3; }
-
-        .trigger-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 8px 0;
-            font-size: 13px;
-        }
-
-        .trigger-icon {
-            width: 24px; height: 24px;
-            border-radius: 6px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px;
-        }
-
-        .trigger-text { color: var(--text-secondary); }
-        .trigger-value { color: var(--text-primary); font-weight: 600; font-family: var(--font-mono); margin-left: auto; }
-
-        /* ── Debate Viewer ────────────────────────────────────────────────── */
-        .debate-panel { grid-column: 3; }
-
-        .debate-log {
-            max-height: 200px; overflow-y: auto;
-            font-size: 12px; font-family: var(--font-mono);
-            color: var(--text-muted);
-            line-height: 1.8;
-        }
-
-        .debate-log::-webkit-scrollbar { width: 4px; }
-        .debate-log::-webkit-scrollbar-track { background: transparent; }
-        .debate-log::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
-
-        .debate-agent { color: var(--accent-primary); font-weight: 600; }
-        .debate-vote { font-weight: 500; }
-        .debate-vote.agree { color: var(--green); }
-        .debate-vote.disagree { color: var(--red); }
-
-        /* ── Empty State ──────────────────────────────────────────────────── */
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 80px 20px;
-        }
-
-        .empty-icon {
-            font-size: 64px; margin-bottom: 20px;
-            opacity: 0.3;
-        }
-
-        .empty-title {
-            font-size: 22px; font-weight: 700;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .empty-sub {
-            font-size: 14px; color: var(--text-muted);
-        }
-
-        /* ── Loading Animation ────────────────────────────────────────────── */
-        .loading-ring {
-            display: inline-block;
-            width: 20px; height: 20px;
-            border: 2px solid transparent;
-            border-top-color: var(--accent-primary);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
+        /* ── Scanning Overlay ───────────────────────────────────────────── */
+        .overlay { position: fixed; inset: 0; z-index: 200; background: rgba(6,6,14,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .overlay-ring { width: 48px; height: 48px; border: 3px solid transparent; border-top-color: var(--accent); border-right-color: var(--accent2); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .overlay-text { font-size: 14px; color: var(--text-secondary); margin-top: 16px; font-family: var(--mono); letter-spacing: 2px; }
 
-        .scanning-overlay {
-            position: fixed; inset: 0; z-index: 200;
-            background: rgba(6, 6, 14, 0.85);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            backdrop-filter: blur(8px);
-        }
-
-        .scanning-text {
-            font-size: 14px; color: var(--text-secondary);
-            margin-top: 16px; font-family: var(--font-mono);
-            letter-spacing: 2px;
-        }
-
-        .scanning-ring {
-            width: 48px; height: 48px;
-            border: 3px solid transparent;
-            border-top-color: var(--accent-primary);
-            border-right-color: var(--accent-secondary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        /* ── Footer ───────────────────────────────────────────────────────── */
-        .footer {
-            padding: 20px 24px;
-            border-top: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
+        /* ── Footer ─────────────────────────────────────────────────────── */
+        .footer { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
         .footer-text { font-size: 11px; color: var(--text-muted); }
-        .footer-brand { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; }
 
-        /* ── Responsive ───────────────────────────────────────────────────── */
-        @media (max-width: 1024px) {
-            .main-grid { grid-template-columns: 1fr 1fr; }
-            .gauge-container { grid-column: 1; }
-            .radar-container { grid-column: 2; }
-            .status-panel { grid-column: 1 / -1; }
-            .agent-grid { grid-template-columns: repeat(3, 1fr); }
-            .briefing-panel, .timeline-panel, .trigger-panel, .debate-panel { grid-column: 1 / -1; }
+        /* ── Animations ─────────────────────────────────────────────────── */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .anim { animation: fadeUp 0.4s ease-out forwards; opacity: 0; }
+        .d1 { animation-delay: 0.05s; } .d2 { animation-delay: 0.1s; } .d3 { animation-delay: 0.15s; } .d4 { animation-delay: 0.2s; } .d5 { animation-delay: 0.25s; }
+
+        /* ── Responsive ─────────────────────────────────────────────────── */
+        @media (max-width: 900px) {
+            .detail-row, .bottom-row { grid-template-columns: 1fr; }
+            .agent-strip { grid-template-columns: repeat(3, 1fr); }
+            .directive-top { flex-direction: column; }
+            .directive-headline { min-width: auto; }
+            .levels-grid { grid-template-columns: repeat(3, 1fr); }
         }
-
-        @media (max-width: 640px) {
-            .main-grid { grid-template-columns: 1fr; }
-            .gauge-container, .radar-container, .status-panel { grid-column: 1; }
-            .agent-grid { grid-template-columns: repeat(2, 1fr); }
-            .header { padding: 12px 16px; }
-            .search-container { padding: 16px; flex-wrap: wrap; }
-            .search-input { max-width: 100%; }
+        @media (max-width: 600px) {
+            .agent-strip { grid-template-columns: repeat(2, 1fr); }
+            .levels-grid { grid-template-columns: repeat(2, 1fr); }
         }
-
-        /* ── Animations ───────────────────────────────────────────────────── */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-in {
-            animation: fadeInUp 0.4s ease-out forwards;
-            opacity: 0;
-        }
-
-        .delay-1 { animation-delay: 0.05s; }
-        .delay-2 { animation-delay: 0.1s; }
-        .delay-3 { animation-delay: 0.15s; }
-        .delay-4 { animation-delay: 0.2s; }
-        .delay-5 { animation-delay: 0.25s; }
-        .delay-6 { animation-delay: 0.3s; }
-        .delay-7 { animation-delay: 0.35s; }
     </style>
 </head>
 <body>
-    <div class="ambient-bg"></div>
+    <div class="ambient"></div>
     <div class="scan-lines"></div>
 
     <div class="app">
-        <!-- Header -->
         <header class="header">
             <div class="header-brand">
                 <div class="logo-mark">⚡</div>
                 <div>
                     <div class="logo-text">ARGUS</div>
-                    <div class="logo-sub">Command Center</div>
+                    <div class="logo-sub">Trade Command Center</div>
                 </div>
             </div>
-            <div class="header-status">
-                <div class="status-dot" id="statusDot"></div>
-                <span class="status-text" id="statusText">ORGANISM ONLINE</span>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span class="status-text">ORGANISM ONLINE</span>
             </div>
         </header>
 
-        <!-- Search -->
-        <div class="search-container">
-            <input type="text" class="search-input" id="tickerInput" placeholder="Enter ticker (e.g. AMC, SPY, TSLA)" autocomplete="off" spellcheck="false" maxlength="10">
-            <button class="btn btn-primary" id="scanBtn" onclick="runScan()">
-                <span id="scanBtnText">⚡ SCAN</span>
-            </button>
-            <button class="btn btn-secondary" id="historyBtn" onclick="loadHistory()" style="display:none;">📜 History</button>
+        <div class="search">
+            <input type="text" class="search-input" id="tickerInput" placeholder="Enter ticker — AMC, SPY, TSLA..." autocomplete="off" spellcheck="false" maxlength="10">
+            <button class="btn btn-scan" id="scanBtn" onclick="runDirective()">⚡ SCAN</button>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="main-grid" id="mainGrid">
-            <!-- Empty State -->
-            <div class="empty-state" id="emptyState">
+        <div id="content">
+            <div class="empty">
                 <div class="empty-icon">👁️</div>
-                <div class="empty-title">100 Eyes. Waiting.</div>
-                <div class="empty-sub">Enter a ticker above to engage the organism.</div>
+                <div class="empty-title">ARGUS is the brain. You are the hands.</div>
+                <div class="empty-sub">Enter a ticker. The organism will tell you what to do.<br>You decide if you pull the trigger.</div>
             </div>
         </div>
 
-        <!-- Footer -->
         <footer class="footer">
-            <span class="footer-text">SML ARGUS v0.2.0 — Phase 2: Pine Chart Surface</span>
-            <span class="footer-brand">© ScriptMasterLabs</span>
+            <span class="footer-text">SML ARGUS v0.2.1 — Trade Directive Engine</span>
+            <span class="footer-text">© ScriptMasterLabs</span>
         </footer>
     </div>
 
-    <!-- Scanning Overlay -->
-    <div class="scanning-overlay" id="scanningOverlay" style="display:none;">
-        <div class="scanning-ring"></div>
-        <div class="scanning-text" id="scanningText">SCANNING...</div>
+    <div class="overlay" id="overlay" style="display:none;">
+        <div class="overlay-ring"></div>
+        <div class="overlay-text" id="overlayText">SCANNING...</div>
     </div>
 
     <script>
-        // ── State ────────────────────────────────────────────────────────────
-        let currentData = null;
-        let currentTicker = '';
-        let isScanning = false;
+        const $ = id => document.getElementById(id);
+        let scanning = false;
 
-        // ── Colors ───────────────────────────────────────────────────────────
-        const COLORS = {
-            dormant: '#4A4A6A', watching: '#5B8CFF', building: '#44BB77',
-            tension: '#E8A020', escalation: '#FF6600', armed: '#FF3030',
-            triggered: '#FF0080', distorted: '#CC44FF', failure: '#FF4400',
-            trap: '#FF4400', cooldown: '#4A4A6A',
-            bullish: '#00FF88', unstable_bullish: '#FFD700',
-            bearish: '#FF3030', unstable_bearish: '#FF6600',
-            neutral: '#8888AA', fractured: '#CC44FF',
-            stable: '#00FF88', fragile: '#FFD700',
-            breaking: '#FF3030',
-        };
+        $('tickerInput').addEventListener('keydown', e => { if (e.key === 'Enter') runDirective(); });
 
-        const BIAS_EMOJI = {
-            bullish: '🟢', unstable_bullish: '🟡',
-            bearish: '🔴', unstable_bearish: '🟠',
-            neutral: '⬜', fractured: '🔀',
-        };
+        async function runDirective() {
+            const ticker = $('tickerInput').value.trim().toUpperCase();
+            if (!ticker || scanning) return;
+            scanning = true;
 
-        const STABILITY_EMOJI = {
-            stable: '✅', fragile: '⚠️', distorted: '🌀', breaking: '💥',
-        };
-
-        // ── Keyboard shortcut ────────────────────────────────────────────────
-        document.getElementById('tickerInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') runScan();
-        });
-
-        // ── API Calls ────────────────────────────────────────────────────────
-        async function runScan() {
-            const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
-            if (!ticker || isScanning) return;
-
-            isScanning = true;
-            currentTicker = ticker;
-            showScanning(ticker);
+            // Show overlay
+            $('overlay').style.display = 'flex';
+            let dots = 0;
+            const phases = [
+                `ANALYZING ${ticker} MARKET DATA`,
+                'RUNNING 5-AGENT INTELLIGENCE',
+                'DEBATE ENGINE RESOLVING',
+                'GENERATING TRADE DIRECTIVE',
+            ];
+            let phase = 0;
+            const iv = setInterval(() => {
+                dots = (dots + 1) % 4;
+                $('overlayText').textContent = phases[phase % phases.length] + '.'.repeat(dots);
+                if (dots === 0) phase++;
+            }, 350);
 
             try {
-                const resp = await fetch('/scan', {
+                const resp = await fetch('/directive', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ticker, timeframes: ['15m', '1h', '1d'] }),
                 });
-
-                if (!resp.ok) throw new Error(`Scan failed: ${resp.status}`);
-                currentData = await resp.json();
-                renderDashboard(currentData);
-                document.getElementById('historyBtn').style.display = '';
+                if (!resp.ok) throw new Error(`Failed: ${resp.status}`);
+                const d = await resp.json();
+                renderDirective(d);
             } catch (err) {
-                console.error(err);
-                showError(err.message);
+                $('content').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Scan Failed</div><div class="empty-sub">${err.message}</div></div>`;
             } finally {
-                isScanning = false;
-                hideScanning();
+                clearInterval(iv);
+                $('overlay').style.display = 'none';
+                scanning = false;
             }
         }
 
-        async function loadHistory() {
-            if (!currentTicker) return;
+        function renderDirective(d) {
+            const COLORS = {
+                bullish: '#00FF88', unstable_bullish: '#FFD700', bearish: '#FF3030',
+                unstable_bearish: '#FF6600', neutral: '#8888AA', fractured: '#CC44FF',
+                stable: '#00FF88', fragile: '#FFD700', distorted: '#CC44FF', breaking: '#FF3030',
+            };
+            const stateColor = COLORS[d.state] || '#555577';
+            const biasColor = COLORS[d.bias] || '#8888AA';
+            const riskColors = { LOW: '#00FF88', MODERATE: '#FFD700', HIGH: '#FF6600', EXTREME: '#FF3030' };
+            const riskColor = riskColors[d.risk_grade] || '#888';
+            const convictionColor = d.conviction === 'HIGH CONVICTION' ? '#00FF88' : d.conviction === 'MODERATE' ? '#FFD700' : d.conviction === 'LOW' ? '#FF6600' : '#555577';
+            const sizeColors = { FULL: '#00FF88', HALF: '#FFD700', QUARTER: '#FF6600', SKIP: '#555577' };
+
+            $('content').innerHTML = `
+                <!-- ═══ THE CALL ═══ -->
+                <div class="directive-hero anim d1" style="border-color: ${d.action_color}33">
+                    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${d.action_color};border-radius:16px 16px 0 0"></div>
+                    <div class="directive-top">
+                        <div class="directive-action-wrap">
+                            <div class="directive-action" style="color:${d.action_color}">${d.action}</div>
+                            <div class="directive-conviction" style="background:${convictionColor}18;color:${convictionColor}">
+                                <span style="font-size:16px">●</span> ${d.conviction} ${d.conviction_pct > 0 ? `— ${d.conviction_pct}%` : ''}
+                            </div>
+                            <div class="directive-ticker">${d.ticker} · ${new Date(d.scanned_at).toLocaleTimeString()}</div>
+                        </div>
+                        <div class="directive-headline">${d.headline}</div>
+                    </div>
+
+                    <!-- Levels -->
+                    <div class="levels-grid">
+                        ${d.entry_above ? `<div class="level-box"><div class="level-label">Entry Above</div><div class="level-value green">$${d.entry_above.toFixed(2)}</div></div>` : ''}
+                        ${d.stop_loss ? `<div class="level-box"><div class="level-label">Stop Loss</div><div class="level-value red">$${d.stop_loss.toFixed(2)}</div></div>` : ''}
+                        ${d.target_1 ? `<div class="level-box"><div class="level-label">Target 1</div><div class="level-value amber">$${d.target_1.toFixed(2)}</div></div>` : ''}
+                        ${d.target_2 ? `<div class="level-box"><div class="level-label">Target 2</div><div class="level-value blue">$${d.target_2.toFixed(2)}</div></div>` : ''}
+                        <div class="level-box">
+                            <div class="level-label">Risk Grade</div>
+                            <div class="level-value" style="color:${riskColor}">${d.risk_emoji} ${d.risk_grade}</div>
+                        </div>
+                        <div class="level-box">
+                            <div class="level-label">Position Size</div>
+                            <div class="level-value" style="color:${sizeColors[d.position_size] || '#888'}">${d.position_size}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ WHY + RISK ═══ -->
+                <div class="detail-row">
+                    <div class="card anim d2">
+                        <div class="card-title">💡 Why This Call</div>
+                        <div class="reasoning-text">${d.reasoning}</div>
+                        ${d.watch_for.length ? `
+                            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+                                <div class="card-title">👀 Watch For</div>
+                                ${d.watch_for.map(w => `<div class="list-item"><span class="list-icon">▸</span>${w}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="card anim d3">
+                        <div class="card-title">⚠️ Risk Assessment</div>
+                        <div class="risk-badge" style="color:${riskColor}">${d.risk_emoji} ${d.risk_grade} RISK</div>
+                        <div class="risk-note">${d.risk_note}</div>
+                        <div class="size-rec">
+                            <div>
+                                <div class="size-label">Recommended Size</div>
+                            </div>
+                            <div class="size-value" style="color:${sizeColors[d.position_size] || '#888'}">${d.position_size}</div>
+                        </div>
+                        ${d.kill_conditions.length ? `
+                            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+                                <div class="card-title">🚫 Kill Conditions</div>
+                                ${d.kill_conditions.map(k => `<div class="list-item"><span class="list-icon" style="color:var(--red)">✕</span>${k}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- ═══ AGENTS + SCORE ═══ -->
+                <div class="bottom-row">
+                    <div class="card anim d4">
+                        <div class="card-title">🧠 Agent Intelligence (what the organism sees)</div>
+                        <div class="agent-strip" id="agentStrip"></div>
+                    </div>
+                    <div class="card anim d5">
+                        <div class="score-summary">
+                            <div class="veil-label">Veil Score</div>
+                            <div class="veil-number">${d.veil_score.toFixed(1)}</div>
+                            <div class="state-badge" style="background:${stateColor}22;color:${stateColor}">${d.state.toUpperCase().replace('_',' ')}</div>
+                            <div style="margin-top:8px;width:100%">
+                                <div class="risk-bar-row"><span class="risk-bar-label">Bias</span><div style="font-size:12px;font-family:var(--mono);color:${biasColor}">${d.bias.replace('_',' ').toUpperCase()}</div></div>
+                                <div class="risk-bar-row"><span class="risk-bar-label">Stability</span><div style="font-size:12px;font-family:var(--mono);color:${COLORS[d.stability] || '#888'}">${d.stability.toUpperCase()}</div></div>
+                                <div class="risk-bar-row"><span class="risk-bar-label">Top Risk</span><div style="font-size:12px;font-family:var(--mono);color:var(--orange)">${d.dominant_risk.replace('_',' ').toUpperCase()}</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Populate agent strip from the scan data we stored
+            loadAgents(d.ticker);
+        }
+
+        // Load agent details from a quick scan check
+        async function loadAgents(ticker) {
+            const strip = document.getElementById('agentStrip');
+            if (!strip) return;
+
             try {
-                const resp = await fetch(`/replay/${currentTicker}?limit=50`);
+                const resp = await fetch(`/chart/${ticker}`);
                 if (!resp.ok) return;
-                const history = await resp.json();
-                renderTimeline(history);
-            } catch (err) {
-                console.error('History load failed:', err);
+                const chart = await resp.json();
+
+                const agents = [
+                    { name: 'Pressure', score: chart.agent_pressure, color: '#FF6B6B', icon: '💨' },
+                    { name: 'Structure', score: chart.agent_structure, color: '#4ECDC4', icon: '🏗️' },
+                    { name: 'Behavior', score: chart.agent_behavior, color: '#FFE66D', icon: '🧠' },
+                    { name: 'Anomaly', score: chart.agent_anomaly, color: '#CC44FF', icon: '👁️' },
+                    { name: 'Cycle', score: chart.agent_cycle, color: '#5B8CFF', icon: '🔄' },
+                ];
+
+                strip.innerHTML = agents.map(a => `
+                    <div class="agent-mini">
+                        <div style="font-size:16px">${a.icon}</div>
+                        <div class="agent-mini-name">${a.name}</div>
+                        <div class="agent-mini-score" style="color:${a.color}">${a.score.toFixed(0)}</div>
+                        <div class="agent-mini-bar"><div class="agent-mini-fill" style="width:${a.score}%;background:${a.color}"></div></div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                strip.innerHTML = '<div style="color:var(--text-muted);font-size:12px;grid-column:1/-1;text-align:center">Agent data loading...</div>';
             }
-        }
-
-        // ── Scanning Overlay ─────────────────────────────────────────────────
-        function showScanning(ticker) {
-            const overlay = document.getElementById('scanningOverlay');
-            const text = document.getElementById('scanningText');
-            overlay.style.display = 'flex';
-            let dots = 0;
-            const phases = [
-                `FETCHING MARKET DATA — ${ticker}`,
-                `RUNNING 5-AGENT ANALYSIS`,
-                `ECHO FORGE MODULATION`,
-                `DEBATE ENGINE RESOLVING`,
-                `GENERATING NARRATIVE`,
-            ];
-            let phase = 0;
-            const interval = setInterval(() => {
-                dots = (dots + 1) % 4;
-                text.textContent = phases[phase % phases.length] + '.'.repeat(dots);
-                if (dots === 0) phase++;
-            }, 400);
-            overlay._interval = interval;
-        }
-
-        function hideScanning() {
-            const overlay = document.getElementById('scanningOverlay');
-            clearInterval(overlay._interval);
-            overlay.style.display = 'none';
-        }
-
-        function showError(msg) {
-            const grid = document.getElementById('mainGrid');
-            grid.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">⚠️</div>
-                    <div class="empty-title">Scan Failed</div>
-                    <div class="empty-sub">${msg}</div>
-                </div>
-            `;
-        }
-
-        // ── Render Dashboard ─────────────────────────────────────────────────
-        function renderDashboard(data) {
-            const grid = document.getElementById('mainGrid');
-            const stateColor = COLORS[data.state] || COLORS.dormant;
-            const biasColor = COLORS[data.bias] || COLORS.neutral;
-            const stabilityColor = COLORS[data.stability] || COLORS.stable;
-            const biasEmoji = BIAS_EMOJI[data.bias] || '⬜';
-            const stabEmoji = STABILITY_EMOJI[data.stability] || '';
-
-            const agents = data.agents || [];
-            const agentMap = {};
-            agents.forEach(a => agentMap[a.name] = a);
-
-            const eventRisk = data.event_risk || {};
-            const triggerMap = data.trigger_map || {};
-
-            grid.innerHTML = `
-                <!-- Veil Gauge -->
-                <div class="card gauge-container animate-in delay-1">
-                    <div class="card-header">
-                        <span class="card-title">Veil Score</span>
-                        <span class="card-badge" style="background:${stateColor}22;color:${stateColor}">${data.state?.toUpperCase() || 'UNKNOWN'}</span>
-                    </div>
-                    <div class="gauge-wrap">
-                        ${renderGaugeSVG(data.veil_score, stateColor)}
-                        <div class="gauge-value">${data.veil_score?.toFixed(1) || '0.0'}</div>
-                        <div class="gauge-label">Hidden State Intensity</div>
-                        <div class="gauge-state" style="background:${stateColor}22;color:${stateColor}">
-                            ${data.state?.toUpperCase().replace('_', ' ') || '—'}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Agent Radar -->
-                <div class="card radar-container animate-in delay-2">
-                    <div class="card-header">
-                        <span class="card-title">Agent Consensus</span>
-                        <span class="card-badge" style="background:rgba(204,68,255,0.1);color:#CC44FF">5 AGENTS</span>
-                    </div>
-                    ${renderRadarSVG(agents)}
-                </div>
-
-                <!-- Status Panel -->
-                <div class="card status-panel animate-in delay-3">
-                    <div class="card-header">
-                        <span class="card-title">Intelligence Summary</span>
-                        <span class="card-badge" style="background:rgba(91,140,255,0.1);color:#5B8CFF">${data.ticker}</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="status-key">Pressure Bias</span>
-                        <span class="status-val" style="color:${biasColor}">${biasEmoji} ${(data.bias || 'neutral').replace('_', ' ').toUpperCase()}</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="status-key">Stability</span>
-                        <span class="status-val" style="color:${stabilityColor}">${stabEmoji} ${(data.stability || 'stable').toUpperCase()}</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="status-key">Alert Mode</span>
-                        <span class="status-val" style="color:${stateColor}">${(data.alert_mode || 'observation').replace('_', ' ').toUpperCase()}</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="status-key">Memory Match</span>
-                        <span class="status-val" style="color:${data.memory_matched ? '#00FF88' : '#555577'}">${data.memory_matched ? '🧠 YES' : 'NO'}</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="status-key">Data Source</span>
-                        <span class="status-val neutral">${(data.data_source || 'yfinance').toUpperCase()}</span>
-                    </div>
-                    <div class="status-row">
-                        <span class="status-key">Scanned</span>
-                        <span class="status-val neutral" style="font-size:11px">${formatTime(data.scanned_at)}</span>
-                    </div>
-                </div>
-
-                <!-- Briefing -->
-                <div class="card briefing-panel animate-in delay-4">
-                    <div class="card-header">
-                        <span class="card-title">📡 Narrative Briefing</span>
-                    </div>
-                    <div class="briefing-text">${data.briefing || 'No briefing generated.'}</div>
-                </div>
-
-                <!-- Agent Detail Grid -->
-                <div class="agent-grid animate-in delay-5">
-                    ${renderAgentCards(agents)}
-                </div>
-
-                <!-- Event Risk -->
-                <div class="card animate-in delay-6" style="grid-column: 1 / -1;">
-                    <div class="card-header">
-                        <span class="card-title">⚡ Event Risk Assessment</span>
-                        <span class="card-badge" style="background:rgba(255,102,0,0.1);color:#FF6600">${(eventRisk.dominant || 'NONE').toUpperCase()}</span>
-                    </div>
-                    ${renderRiskBars(eventRisk)}
-                </div>
-
-                <!-- Trigger Map + Debate -->
-                <div class="card trigger-panel animate-in delay-7">
-                    <div class="card-header">
-                        <span class="card-title">🎯 Trigger Map</span>
-                    </div>
-                    ${renderTriggerMap(triggerMap)}
-                </div>
-
-                <div class="card debate-panel animate-in delay-7">
-                    <div class="card-header">
-                        <span class="card-title">⚖️ Debate Transcript</span>
-                    </div>
-                    <div class="debate-log">
-                        ${renderDebateLog(agents, data)}
-                    </div>
-                </div>
-
-                <!-- Timeline placeholder -->
-                <div class="card timeline-panel animate-in delay-7" id="timelinePanel" style="display:none">
-                    <div class="card-header">
-                        <span class="card-title">📈 State Timeline</span>
-                    </div>
-                    <div class="timeline-container" id="timelineContainer"></div>
-                </div>
-            `;
-        }
-
-        // ── SVG Gauge ────────────────────────────────────────────────────────
-        function renderGaugeSVG(score, color) {
-            const pct = Math.max(0, Math.min(100, score)) / 100;
-            const angle = -135 + pct * 270;  // -135 to +135
-            const r = 80;
-            const cx = 110, cy = 100;
-            
-            // Arc path
-            const startAngle = -135 * Math.PI / 180;
-            const endAngle = angle * Math.PI / 180;
-            const x1 = cx + r * Math.cos(startAngle);
-            const y1 = cy + r * Math.sin(startAngle);
-            const x2 = cx + r * Math.cos(endAngle);
-            const y2 = cy + r * Math.sin(endAngle);
-            const largeArc = (angle + 135) > 180 ? 1 : 0;
-
-            // Needle
-            const nx = cx + (r - 10) * Math.cos(endAngle);
-            const ny = cy + (r - 10) * Math.sin(endAngle);
-
-            return `
-                <svg class="gauge-svg" viewBox="0 0 220 130">
-                    <!-- Track -->
-                    <path d="${describeArc(cx, cy, r, -135, 135)}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="12" stroke-linecap="round"/>
-                    <!-- Fill -->
-                    <path d="${describeArc(cx, cy, r, -135, angle)}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round" opacity="0.8"/>
-                    <!-- Glow -->
-                    <path d="${describeArc(cx, cy, r, -135, angle)}" fill="none" stroke="${color}" stroke-width="16" stroke-linecap="round" opacity="0.15" filter="blur(4px)"/>
-                    <!-- Needle dot -->
-                    <circle cx="${nx}" cy="${ny}" r="5" fill="${color}" filter="drop-shadow(0 0 6px ${color})"/>
-                    <!-- Center -->
-                    <circle cx="${cx}" cy="${cy}" r="4" fill="rgba(255,255,255,0.1)"/>
-                    <!-- Labels -->
-                    <text x="25" y="125" fill="#555577" font-size="10" font-family="Inter">0</text>
-                    <text x="190" y="125" fill="#555577" font-size="10" font-family="Inter">100</text>
-                </svg>
-            `;
-        }
-
-        function describeArc(cx, cy, r, startDeg, endDeg) {
-            const startRad = startDeg * Math.PI / 180;
-            const endRad = endDeg * Math.PI / 180;
-            const x1 = cx + r * Math.cos(startRad);
-            const y1 = cy + r * Math.sin(startRad);
-            const x2 = cx + r * Math.cos(endRad);
-            const y2 = cy + r * Math.sin(endRad);
-            const diff = endDeg - startDeg;
-            const largeArc = diff > 180 ? 1 : 0;
-            return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
-        }
-
-        // ── Radar Chart SVG ──────────────────────────────────────────────────
-        function renderRadarSVG(agents) {
-            const names = ['pressure', 'structure', 'behavior', 'anomaly', 'cycle'];
-            const labels = ['Pressure', 'Structure', 'Behavior', 'Anomaly', 'Cycle'];
-            const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#CC44FF', '#5B8CFF'];
-            const cx = 140, cy = 120, maxR = 90;
-            const n = 5;
-            const angleStep = (2 * Math.PI) / n;
-            const startAngle = -Math.PI / 2;
-
-            let gridLines = '';
-            [20, 40, 60, 80, 100].forEach(pct => {
-                const r = (pct / 100) * maxR;
-                let pts = '';
-                for (let i = 0; i < n; i++) {
-                    const a = startAngle + i * angleStep;
-                    pts += `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)} `;
-                }
-                gridLines += `<polygon points="${pts.trim()}" class="radar-grid"/>`;
-            });
-
-            // Axis lines
-            let axes = '';
-            for (let i = 0; i < n; i++) {
-                const a = startAngle + i * angleStep;
-                axes += `<line x1="${cx}" y1="${cy}" x2="${cx + maxR * Math.cos(a)}" y2="${cy + maxR * Math.sin(a)}" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>`;
-            }
-
-            // Data shape
-            const scores = names.map(name => {
-                const agent = agents.find(a => a.name === name);
-                return agent ? agent.score : 50;
-            });
-
-            let shapePts = '';
-            let dots = '';
-            let labelEls = '';
-            for (let i = 0; i < n; i++) {
-                const a = startAngle + i * angleStep;
-                const r = (scores[i] / 100) * maxR;
-                const x = cx + r * Math.cos(a);
-                const y = cy + r * Math.sin(a);
-                shapePts += `${x},${y} `;
-                dots += `<circle cx="${x}" cy="${y}" r="4" class="radar-dot" fill="${colors[i]}"/>`;
-
-                // Labels
-                const lx = cx + (maxR + 18) * Math.cos(a);
-                const ly = cy + (maxR + 18) * Math.sin(a);
-                const anchor = Math.abs(Math.cos(a)) < 0.1 ? 'middle' : Math.cos(a) > 0 ? 'start' : 'end';
-                labelEls += `<text x="${lx}" y="${ly + 4}" text-anchor="${anchor}" class="radar-label" fill="${colors[i]}">${labels[i]}</text>`;
-                labelEls += `<text x="${lx}" y="${ly + 16}" text-anchor="${anchor}" fill="#555577" font-size="10" font-family="JetBrains Mono">${scores[i].toFixed(0)}</text>`;
-            }
-
-            return `
-                <svg class="radar-svg" viewBox="0 0 280 260">
-                    ${gridLines}
-                    ${axes}
-                    <polygon points="${shapePts.trim()}" class="radar-shape"/>
-                    ${dots}
-                    ${labelEls}
-                </svg>
-            `;
-        }
-
-        // ── Agent Cards ──────────────────────────────────────────────────────
-        function renderAgentCards(agents) {
-            const colors = {
-                pressure: '#FF6B6B', structure: '#4ECDC4',
-                behavior: '#FFE66D', anomaly: '#CC44FF', cycle: '#5B8CFF'
-            };
-            const icons = {
-                pressure: '💨', structure: '🏗️',
-                behavior: '🧠', anomaly: '👁️', cycle: '🔄'
-            };
-
-            return agents.map(a => `
-                <div class="agent-card">
-                    <div style="font-size:20px;margin-bottom:4px">${icons[a.name] || '🔹'}</div>
-                    <div class="agent-name">${a.name}</div>
-                    <div class="agent-score" style="color:${colors[a.name] || '#888'}">${a.score?.toFixed(1)}</div>
-                    <div class="agent-bar">
-                        <div class="agent-bar-fill" style="width:${a.score}%;background:${colors[a.name]}"></div>
-                    </div>
-                    <div class="agent-thesis">${a.thesis?.substring(0, 80) || '—'}${a.thesis?.length > 80 ? '...' : ''}</div>
-                </div>
-            `).join('');
-        }
-
-        // ── Risk Bars ────────────────────────────────────────────────────────
-        function renderRiskBars(risk) {
-            const items = [
-                { key: 'expansion', label: 'Expansion', color: '#44BB77' },
-                { key: 'reversal', label: 'Reversal', color: '#FF3030' },
-                { key: 'squeeze', label: 'Squeeze', color: '#5B8CFF' },
-                { key: 'trap', label: 'Trap', color: '#FF6600' },
-                { key: 'regime_break', label: 'Regime Break', color: '#FF0080' },
-            ];
-
-            return items.map(item => {
-                const val = (risk[item.key] || 0) * 100;
-                return `
-                    <div class="risk-bar-wrap">
-                        <span class="risk-label">${item.label}</span>
-                        <div class="risk-track">
-                            <div class="risk-fill" style="width:${val}%;background:${item.color}"></div>
-                        </div>
-                        <span class="risk-pct" style="color:${item.color}">${val.toFixed(0)}%</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // ── Trigger Map ──────────────────────────────────────────────────────
-        function renderTriggerMap(tm) {
-            let items = '';
-            
-            if (tm.confirm_above) {
-                items += `
-                    <div class="trigger-item">
-                        <div class="trigger-icon" style="background:rgba(0,255,136,0.1)">🎯</div>
-                        <span class="trigger-text">Confirm above</span>
-                        <span class="trigger-value" style="color:#00FF88">$${tm.confirm_above?.toFixed(2)}</span>
-                    </div>
-                `;
-            }
-
-            if (tm.invalidate_below) {
-                items += `
-                    <div class="trigger-item">
-                        <div class="trigger-icon" style="background:rgba(255,48,48,0.1)">🚫</div>
-                        <span class="trigger-text">Invalidate below</span>
-                        <span class="trigger-value" style="color:#FF3030">$${tm.invalidate_below?.toFixed(2)}</span>
-                    </div>
-                `;
-            }
-
-            if (tm.time_limit_bars) {
-                items += `
-                    <div class="trigger-item">
-                        <div class="trigger-icon" style="background:rgba(255,215,0,0.1)">⏰</div>
-                        <span class="trigger-text">Time limit</span>
-                        <span class="trigger-value" style="color:#FFD700">${tm.time_limit_bars} bars</span>
-                    </div>
-                `;
-            }
-
-            if (tm.conditions?.length) {
-                tm.conditions.forEach(c => {
-                    items += `
-                        <div class="trigger-item">
-                            <div class="trigger-icon" style="background:rgba(91,140,255,0.1)">⚡</div>
-                            <span class="trigger-text">${c}</span>
-                        </div>
-                    `;
-                });
-            }
-
-            return items || '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">No active triggers</div>';
-        }
-
-        // ── Debate Log ───────────────────────────────────────────────────────
-        function renderDebateLog(agents, data) {
-            let log = '';
-            const biasWord = (data.bias || 'neutral').includes('bullish') ? 'BULLISH' : 
-                             (data.bias || 'neutral').includes('bearish') ? 'BEARISH' : 'NEUTRAL';
-
-            agents.forEach(a => {
-                const vote = a.score > 55 ? 'BULLISH' : a.score < 45 ? 'BEARISH' : 'NEUTRAL';
-                const agrees = vote === biasWord;
-                log += `<div><span class="debate-agent">${a.name.toUpperCase()}</span> votes <span class="debate-vote ${agrees ? 'agree' : 'disagree'}">${vote}</span> (${a.score?.toFixed(0)}) — conf ${(a.confidence * 100)?.toFixed(0)}%</div>`;
-                
-                if (a.contradictions?.length) {
-                    a.contradictions.forEach(c => {
-                        log += `<div style="padding-left:16px;color:#FF6B6B;font-size:11px">⚠ ${c}</div>`;
-                    });
-                }
-            });
-
-            log += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">`;
-            log += `<span style="color:#CC44FF">VERDICT:</span> <span style="color:${COLORS[data.bias] || '#888'}">${biasWord}</span> `;
-            log += `| Stability: <span style="color:${COLORS[data.stability] || '#888'}">${(data.stability || '').toUpperCase()}</span>`;
-            log += `</div>`;
-
-            return log;
-        }
-
-        // ── Timeline ─────────────────────────────────────────────────────────
-        function renderTimeline(history) {
-            const panel = document.getElementById('timelinePanel');
-            const container = document.getElementById('timelineContainer');
-            if (!panel || !container || !history.length) return;
-
-            panel.style.display = '';
-            const maxScore = 100;
-            const bars = history.map(h => {
-                const pct = (h.veil_score / maxScore) * 100;
-                const color = COLORS[h.state] || COLORS.dormant;
-                const time = formatTime(h.scanned_at);
-                return `<div class="timeline-bar" style="height:${pct}%;background:${color}" data-tooltip="${h.state?.toUpperCase()} — ${h.veil_score?.toFixed(1)} — ${time}"></div>`;
-            }).join('');
-
-            container.innerHTML = `<div class="timeline-chart">${bars}</div>`;
-        }
-
-        // ── Util ─────────────────────────────────────────────────────────────
-        function formatTime(ts) {
-            if (!ts) return '—';
-            const d = new Date(ts);
-            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
     </script>
 </body>
