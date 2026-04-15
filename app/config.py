@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # App
     app_name: str = "SML ARGUS"
-    app_version: str = "0.1.0"
+    app_version: str = "0.2.0"
     debug: bool = False
     secret_key: str = "argus-dev-secret-change-in-production"
 

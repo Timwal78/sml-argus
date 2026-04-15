@@ -1,0 +1,199 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// SML ARGUS — Veil Score Overlay
+// Pine Script v5 | © ScriptMasterLabs
+//
+// The hidden state detector. This indicator plots the ARGUS Veil Score
+// as a color-coded oscillator (0–100) with agent consensus visualization.
+//
+// How to use:
+//   1. Add to chart as an indicator
+//   2. Point webhook at: https://YOUR-ARGUS-URL/webhook/pine
+//   3. Set interval alerts → ARGUS ingests and cross-references
+// ─────────────────────────────────────────────────────────────────────────────
+
+//@version=5
+indicator("SML ARGUS — Veil Overlay", shorttitle="ARGUS⚡", overlay=false, precision=1, format=format.price)
+
+// ── Inputs ───────────────────────────────────────────────────────────────────
+i_rsiLen       = input.int(14, "RSI Length", minval=2, maxval=50)
+i_atrLen       = input.int(14, "ATR Length", minval=2, maxval=50)
+i_volLen       = input.int(20, "Volume MA Length", minval=5, maxval=100)
+i_macdFast     = input.int(12, "MACD Fast", minval=2, maxval=50)
+i_macdSlow     = input.int(26, "MACD Slow", minval=2, maxval=100)
+i_macdSignal   = input.int(9, "MACD Signal", minval=2, maxval=50)
+i_bbLen        = input.int(20, "BB Length", minval=5, maxval=100)
+i_bbMult       = input.float(2.0, "BB Multiplier", minval=0.5, maxval=5.0, step=0.1)
+i_smoothLen    = input.int(3, "Veil Smoothing", minval=1, maxval=10)
+i_showAgents   = input.bool(true, "Show Agent Bars")
+i_showZones    = input.bool(true, "Show Trigger Zones")
+
+// ── Colors ───────────────────────────────────────────────────────────────────
+c_dormant      = color.new(#4A4A6A, 0)       // muted purple
+c_watching     = color.new(#5B8CFF, 0)       // blue
+c_building     = color.new(#44BB77, 0)       // green
+c_tension      = color.new(#E8A020, 0)       // amber
+c_escalation   = color.new(#FF6600, 0)       // orange
+c_armed        = color.new(#FF3030, 0)       // red
+c_triggered    = color.new(#FF0080, 0)       // hot pink
+c_distorted    = color.new(#CC44FF, 0)       // electric violet
+c_trap         = color.new(#FF4400, 40)      // dark orange
+c_bg_armed     = color.new(#FF3030, 88)      // very faint red bg
+c_bg_triggered = color.new(#FF0080, 85)      // very faint pink bg
+c_bg_distorted = color.new(#CC44FF, 90)      // very faint violet bg
+
+// ── Core Calculations ────────────────────────────────────────────────────────
+rsiVal  = ta.rsi(close, i_rsiLen)
+atrVal  = ta.atr(i_atrLen)
+volRatio = volume / ta.sma(volume, i_volLen)
+
+[macdLine, signalLine, histLine] = ta.macd(close, i_macdFast, i_macdSlow, i_macdSignal)
+
+bbBasis = ta.sma(close, i_bbLen)
+bbDev   = i_bbMult * ta.stdev(close, i_bbLen)
+bbUpper = bbBasis + bbDev
+bbLower = bbBasis - bbDev
+bbWidth = (bbUpper - bbLower) / bbBasis * 100
+
+// VWAP approximation (intraday)
+vwapVal  = ta.vwap(hlc3)
+vwapBias = (close - vwapVal) / atrVal
+
+// ── Agent Scoring (local approximation of server-side agents) ────────────────
+
+// 1. Pressure Agent — directional force
+pressureRaw = (rsiVal - 50) * 0.4 + math.min(volRatio - 1, 2) * 15 + vwapBias * 8
+pressureScore = math.max(0, math.min(100, 50 + pressureRaw))
+
+// 2. Structure Agent — trend integrity
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+trendIntact = close > ema20 and ema20 > ema50 ? 1.0 : close < ema20 and ema20 < ema50 ? -1.0 : 0.0
+macdMomentum = macdLine > signalLine ? 1.0 : -1.0
+structureScore = math.max(0, math.min(100, 50 + trendIntact * 20 + macdMomentum * 10 + (rsiVal - 50) * 0.2))
+
+// 3. Behavior Agent — crowd psychology
+rsiExtreme  = rsiVal > 75 or rsiVal < 25
+volSpike    = volRatio > 2.5
+priceChase  = close > ta.highest(high, 10)[1] and volSpike
+behaviorRaw = (rsiExtreme ? 15 : 0) + (volSpike ? 12 : 0) + (priceChase ? 10 : 0)
+behaviorScore = math.max(0, math.min(100, 35 + behaviorRaw))
+
+// 4. Anomaly Agent — things that shouldn't be happening
+rsiDivBull  = close < close[5] and rsiVal > rsiVal[5]    // bullish divergence
+rsiDivBear  = close > close[5] and rsiVal < rsiVal[5]    // bearish divergence
+volAnomaly  = volRatio > 3.0
+priceAnomaly = math.abs(close - open) / atrVal > 2.0
+anomalyRaw  = (rsiDivBull or rsiDivBear ? 20 : 0) + (volAnomaly ? 18 : 0) + (priceAnomaly ? 15 : 0)
+anomalyScore = math.max(0, math.min(100, 20 + anomalyRaw))
+
+// 5. Cycle Agent — timing and repetition
+bbSqueeze   = bbWidth < ta.sma(bbWidth, 50) * 0.6
+compressionBars = ta.barssince(not bbSqueeze)
+cycleRaw    = (bbSqueeze ? 20 : 0) + math.min(compressionBars, 20) * 0.5
+cycleScore  = math.max(0, math.min(100, 30 + cycleRaw))
+
+// ── Veil Score Computation ───────────────────────────────────────────────────
+weights_pressure  = 0.30
+weights_structure  = 0.25
+weights_behavior   = 0.15
+weights_anomaly    = 0.15
+weights_cycle      = 0.15
+
+rawVeil = pressureScore * weights_pressure + structureScore * weights_structure + behaviorScore * weights_behavior + anomalyScore * weights_anomaly + cycleScore * weights_cycle
+
+// Compression boost
+compressionBoost = bbSqueeze ? 8.0 : 0.0
+
+// Contradiction penalty
+agentMax = math.max(pressureScore, math.max(structureScore, math.max(behaviorScore, math.max(anomalyScore, cycleScore))))
+agentMin = math.min(pressureScore, math.min(structureScore, math.min(behaviorScore, math.min(anomalyScore, cycleScore))))
+contradiction = (agentMax - agentMin) / 100 * 5
+
+veilScore = math.max(0, math.min(100, rawVeil + compressionBoost - contradiction))
+veilSmooth = ta.ema(veilScore, i_smoothLen)
+
+// ── State Machine ────────────────────────────────────────────────────────────
+stateCode = veilSmooth >= 82 ? 6 :   // triggered
+            veilSmooth >= 72 ? 5 :   // armed
+            veilSmooth >= 62 ? 4 :   // escalation
+            veilSmooth >= 52 ? 3 :   // tension
+            veilSmooth >= 40 ? 2 :   // building
+            veilSmooth >= 25 ? 1 :   // watching
+            0                         // dormant
+
+anomalyOverride = anomalyScore > 70 ? true : false
+isDistorted = anomalyOverride and veilSmooth > 55
+
+stateColor = isDistorted ? c_distorted :
+             stateCode == 6 ? c_triggered :
+             stateCode == 5 ? c_armed :
+             stateCode == 4 ? c_escalation :
+             stateCode == 3 ? c_tension :
+             stateCode == 2 ? c_building :
+             stateCode == 1 ? c_watching :
+             c_dormant
+
+// ── Plots ────────────────────────────────────────────────────────────────────
+
+// Veil Score line
+plot(veilSmooth, "Veil Score", color=stateColor, linewidth=3)
+
+// Trigger zones
+h82 = hline(82, "Triggered", color=color.new(#FF0080, 70), linestyle=hline.style_dotted)
+h72 = hline(72, "Armed", color=color.new(#FF3030, 70), linestyle=hline.style_dotted)
+h52 = hline(52, "Tension", color=color.new(#E8A020, 70), linestyle=hline.style_dotted)
+h25 = hline(25, "Dormant", color=color.new(#4A4A6A, 70), linestyle=hline.style_dotted)
+h0  = hline(0, "", color=color.new(color.white, 100))
+h100 = hline(100, "", color=color.new(color.white, 100))
+
+// Zone fills
+fill(h72, h82, color=i_showZones ? color.new(#FF3030, 92) : na, title="Armed Zone")
+fill(h82, h100, color=i_showZones ? color.new(#FF0080, 92) : na, title="Triggered Zone")
+
+// Background state highlights
+bgcolor(veilSmooth >= 82 ? c_bg_triggered : na, title="Triggered BG")
+bgcolor(veilSmooth >= 72 and veilSmooth < 82 ? c_bg_armed : na, title="Armed BG")
+bgcolor(isDistorted ? c_bg_distorted : na, title="Distorted BG")
+
+// ── Agent Consensus Bars ─────────────────────────────────────────────────────
+plot(i_showAgents ? pressureScore : na, "Pressure", color=color.new(#FF6B6B, 60), style=plot.style_columns)
+plot(i_showAgents ? structureScore : na, "Structure", color=color.new(#4ECDC4, 80), style=plot.style_columns)
+
+// ── State Labels ─────────────────────────────────────────────────────────────
+stateText = isDistorted ? "DISTORTED" :
+            stateCode == 6 ? "TRIGGERED" :
+            stateCode == 5 ? "ARMED" :
+            stateCode == 4 ? "ESCALATION" :
+            stateCode == 3 ? "TENSION" :
+            stateCode == 2 ? "BUILDING" :
+            stateCode == 1 ? "WATCHING" :
+            "DORMANT"
+
+// State change label
+stateChanged = stateCode != stateCode[1] or (isDistorted != isDistorted[1])
+if stateChanged
+    label.new(bar_index, veilSmooth, stateText, style=label.style_label_down, color=stateColor, textcolor=color.white, size=size.small)
+
+// ── Alerts ───────────────────────────────────────────────────────────────────
+alertcondition(ta.crossover(veilSmooth, 72), "ARGUS Armed", "ARGUS: {{ticker}} ARMED — Veil Score crossed 72")
+alertcondition(ta.crossover(veilSmooth, 82), "ARGUS Triggered", "ARGUS: {{ticker}} TRIGGERED — Veil Score crossed 82")
+alertcondition(isDistorted and not isDistorted[1], "ARGUS Distortion", "ARGUS: {{ticker}} DISTORTION DETECTED — Anomaly override active")
+alertcondition(ta.crossunder(veilSmooth, 25), "ARGUS Dormant", "ARGUS: {{ticker}} returned to DORMANT — Veil Score below 25")
+
+// ── Info Table ───────────────────────────────────────────────────────────────
+if barstate.islast
+    var table t = table.new(position.top_right, 2, 7, border_width=1, border_color=color.new(#FFFFFF, 80), bgcolor=color.new(#1A1A2E, 10))
+    table.cell(t, 0, 0, "ARGUS", text_color=#CC44FF, text_size=size.small, text_halign=text.align_left)
+    table.cell(t, 1, 0, "⚡ " + stateText, text_color=stateColor, text_size=size.small)
+    table.cell(t, 0, 1, "Veil", text_color=#888888, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(t, 1, 1, str.tostring(veilSmooth, "#.0"), text_color=stateColor, text_size=size.tiny)
+    table.cell(t, 0, 2, "Pressure", text_color=#888888, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(t, 1, 2, str.tostring(pressureScore, "#.0"), text_color=#FF6B6B, text_size=size.tiny)
+    table.cell(t, 0, 3, "Structure", text_color=#888888, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(t, 1, 3, str.tostring(structureScore, "#.0"), text_color=#4ECDC4, text_size=size.tiny)
+    table.cell(t, 0, 4, "Behavior", text_color=#888888, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(t, 1, 4, str.tostring(behaviorScore, "#.0"), text_color=#FFE66D, text_size=size.tiny)
+    table.cell(t, 0, 5, "Anomaly", text_color=#888888, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(t, 1, 5, str.tostring(anomalyScore, "#.0"), text_color=#CC44FF, text_size=size.tiny)
+    table.cell(t, 0, 6, "Cycle", text_color=#888888, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(t, 1, 6, str.tostring(cycleScore, "#.0"), text_color=#5B8CFF, text_size=size.tiny)

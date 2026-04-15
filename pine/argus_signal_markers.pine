@@ -1,0 +1,158 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// SML ARGUS — Signal Markers
+// Pine Script v5 | © ScriptMasterLabs
+//
+// Chart markers at critical state transitions. Plots shapes on price bars
+// when ARGUS reaches Armed, Triggered, Distorted, or Trap conditions.
+// Alert conditions wired for webhook integration back into the organism.
+//
+// Use with: ARGUS Veil Overlay + Bias Radar for full intelligence surface.
+// ─────────────────────────────────────────────────────────────────────────────
+
+//@version=5
+indicator("SML ARGUS — Signal Markers", shorttitle="ARGUS Signals", overlay=true, max_labels_count=200)
+
+// ── Inputs ───────────────────────────────────────────────────────────────────
+i_rsiLen       = input.int(14, "RSI Length", minval=2, maxval=50)
+i_atrLen       = input.int(14, "ATR Length", minval=2, maxval=50)
+i_volLen       = input.int(20, "Volume MA Length", minval=5, maxval=100)
+i_macdFast     = input.int(12, "MACD Fast")
+i_macdSlow     = input.int(26, "MACD Slow")
+i_macdSignal   = input.int(9, "MACD Signal")
+i_bbLen        = input.int(20, "BB Length", minval=5, maxval=100)
+i_bbMult       = input.float(2.0, "BB Multiplier", minval=0.5, maxval=5.0, step=0.1)
+i_showArmed    = input.bool(true, "Show Armed Markers")
+i_showTriggered = input.bool(true, "Show Triggered Markers")
+i_showDistorted = input.bool(true, "Show Distortion Markers")
+i_showTrap     = input.bool(true, "Show Trap Markers")
+i_showSqueeze  = input.bool(true, "Show Squeeze Markers")
+i_showMemory   = input.bool(true, "Show Memory Zones")
+i_markerSize   = input.string("Normal", "Marker Size", options=["Tiny", "Small", "Normal", "Large"])
+
+// ── Colors ───────────────────────────────────────────────────────────────────
+c_armed        = color.new(#FF3030, 0)
+c_triggered    = color.new(#FF0080, 0)
+c_distorted    = color.new(#CC44FF, 0)
+c_trap         = color.new(#FF6600, 0)
+c_squeeze      = color.new(#5B8CFF, 0)
+c_memory_bull  = color.new(#00FF88, 85)
+c_memory_bear  = color.new(#FF4444, 85)
+
+markerSz = i_markerSize == "Tiny" ? size.tiny :
+           i_markerSize == "Small" ? size.small :
+           i_markerSize == "Large" ? size.large :
+           size.normal
+
+// ── Core Calculations ────────────────────────────────────────────────────────
+rsiVal  = ta.rsi(close, i_rsiLen)
+atrVal  = ta.atr(i_atrLen)
+volRatio = volume / ta.sma(volume, i_volLen)
+
+[macdLine, signalLine, histLine] = ta.macd(close, i_macdFast, i_macdSlow, i_macdSignal)
+
+bbBasis = ta.sma(close, i_bbLen)
+bbDev   = i_bbMult * ta.stdev(close, i_bbLen)
+bbUpper = bbBasis + bbDev
+bbLower = bbBasis - bbDev
+bbWidth = (bbUpper - bbLower) / bbBasis * 100
+
+vwapVal  = ta.vwap(hlc3)
+vwapBias = (close - vwapVal) / atrVal
+
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+
+// ── Agent Scores (local mirror) ──────────────────────────────────────────────
+pressureRaw = (rsiVal - 50) * 0.4 + math.min(volRatio - 1, 2) * 15 + vwapBias * 8
+pressureScore = math.max(0, math.min(100, 50 + pressureRaw))
+
+trendIntact = close > ema20 and ema20 > ema50 ? 1.0 : close < ema20 and ema20 < ema50 ? -1.0 : 0.0
+macdMomentum = macdLine > signalLine ? 1.0 : -1.0
+structureScore = math.max(0, math.min(100, 50 + trendIntact * 20 + macdMomentum * 10 + (rsiVal - 50) * 0.2))
+
+rsiExtreme  = rsiVal > 75 or rsiVal < 25
+volSpike    = volRatio > 2.5
+priceChase  = close > ta.highest(high, 10)[1] and volSpike
+behaviorScore = math.max(0, math.min(100, 35 + (rsiExtreme ? 15 : 0) + (volSpike ? 12 : 0) + (priceChase ? 10 : 0)))
+
+rsiDivBull  = close < close[5] and rsiVal > rsiVal[5]
+rsiDivBear  = close > close[5] and rsiVal < rsiVal[5]
+volAnomaly  = volRatio > 3.0
+priceAnomaly = math.abs(close - open) / atrVal > 2.0
+anomalyScore = math.max(0, math.min(100, 20 + (rsiDivBull or rsiDivBear ? 20 : 0) + (volAnomaly ? 18 : 0) + (priceAnomaly ? 15 : 0)))
+
+bbSqueeze     = bbWidth < ta.sma(bbWidth, 50) * 0.6
+cycleScore    = math.max(0, math.min(100, 30 + (bbSqueeze ? 20 : 0) + math.min(ta.barssince(not bbSqueeze), 20) * 0.5))
+
+// ── Veil Score ───────────────────────────────────────────────────────────────
+rawVeil = pressureScore * 0.30 + structureScore * 0.25 + behaviorScore * 0.15 + anomalyScore * 0.15 + cycleScore * 0.15
+compressionBoost = bbSqueeze ? 8.0 : 0.0
+agentMax = math.max(pressureScore, math.max(structureScore, math.max(behaviorScore, math.max(anomalyScore, cycleScore))))
+agentMin = math.min(pressureScore, math.min(structureScore, math.min(behaviorScore, math.min(anomalyScore, cycleScore))))
+contradiction = (agentMax - agentMin) / 100 * 5
+veilScore = math.max(0, math.min(100, rawVeil + compressionBoost - contradiction))
+veilSmooth = ta.ema(veilScore, 3)
+
+// ── State Detection ──────────────────────────────────────────────────────────
+isDistorted = anomalyScore > 70 and veilSmooth > 55
+isArmed     = veilSmooth >= 72 and veilSmooth < 82 and not isDistorted
+isTriggered = veilSmooth >= 82 and not isDistorted
+
+agentSpread = math.abs(pressureScore - structureScore)
+isTrap      = (agentSpread > 30 and anomalyScore > 50) or (veilSmooth > 60 and behaviorScore > 65 and anomalyScore > 55)
+
+isSqueeze   = bbSqueeze and veilSmooth > 50
+
+// ── Transition Detection (only fire on NEW state entry) ──────────────────────
+becameArmed     = isArmed and not isArmed[1]
+becameTriggered = isTriggered and not isTriggered[1]
+becameDistorted = isDistorted and not isDistorted[1]
+becameTrap      = isTrap and not isTrap[1]
+becameSqueeze   = isSqueeze and not isSqueeze[1]
+
+// ── Chart Markers ────────────────────────────────────────────────────────────
+
+// Armed — diamond above bar
+plotshape(i_showArmed and becameArmed, "Armed", style=shape.diamond, location=location.abovebar, color=c_armed, size=markerSz)
+
+// Triggered — triangle up below bar
+plotshape(i_showTriggered and becameTriggered, "Triggered", style=shape.triangleup, location=location.belowbar, color=c_triggered, size=markerSz)
+
+// Distorted — cross above bar
+plotshape(i_showDistorted and becameDistorted, "Distorted", style=shape.xcross, location=location.abovebar, color=c_distorted, size=markerSz)
+
+// Trap Risk — triangle down above bar
+plotshape(i_showTrap and becameTrap, "Trap", style=shape.triangledown, location=location.abovebar, color=c_trap, size=markerSz)
+
+// Squeeze Start — circle below bar
+plotshape(i_showSqueeze and becameSqueeze, "Squeeze", style=shape.circle, location=location.belowbar, color=c_squeeze, size=markerSz)
+
+// ── Labels on Major Events ───────────────────────────────────────────────────
+if becameTriggered and i_showTriggered
+    label.new(bar_index, low - atrVal * 0.5, "⚡ TRIGGERED\nVeil: " + str.tostring(veilSmooth, "#.0"), style=label.style_label_up, color=c_triggered, textcolor=color.white, size=size.small)
+
+if becameArmed and i_showArmed
+    label.new(bar_index, high + atrVal * 0.5, "🔥 ARMED\nVeil: " + str.tostring(veilSmooth, "#.0"), style=label.style_label_down, color=c_armed, textcolor=color.white, size=size.small)
+
+if becameDistorted and i_showDistorted
+    label.new(bar_index, high + atrVal * 0.8, "🌀 DISTORTION\nAnomaly: " + str.tostring(anomalyScore, "#.0"), style=label.style_label_down, color=c_distorted, textcolor=color.white, size=size.small)
+
+if becameTrap and i_showTrap
+    label.new(bar_index, high + atrVal * 0.5, "⚠️ TRAP RISK", style=label.style_label_down, color=c_trap, textcolor=color.white, size=size.small)
+
+// ── Memory Zones (highlighting bars where state persists) ────────────────────
+bgcolor(i_showMemory and isTriggered ? c_memory_bull : na, title="Triggered Zone")
+bgcolor(i_showMemory and isDistorted ? color.new(c_distorted, 92) : na, title="Distortion Zone")
+bgcolor(i_showMemory and isTrap ? color.new(c_trap, 92) : na, title="Trap Zone")
+
+// ── Squeeze Band Visualization ───────────────────────────────────────────────
+upperBand = plot(bbUpper, "BB Upper", color=bbSqueeze ? c_squeeze : color.new(#4A4A6A, 70), linewidth=1)
+lowerBand = plot(bbLower, "BB Lower", color=bbSqueeze ? c_squeeze : color.new(#4A4A6A, 70), linewidth=1)
+fill(upperBand, lowerBand, color=bbSqueeze ? color.new(c_squeeze, 92) : color.new(#4A4A6A, 95), title="BB Fill")
+
+// ── Alert Conditions ─────────────────────────────────────────────────────────
+alertcondition(becameArmed, "ARGUS Armed Signal", '{"ticker": "{{ticker}}", "timeframe": "{{interval}}", "event_type": "armed", "close": {{close}}, "volume": {{volume}}}')
+alertcondition(becameTriggered, "ARGUS Triggered Signal", '{"ticker": "{{ticker}}", "timeframe": "{{interval}}", "event_type": "triggered", "close": {{close}}, "volume": {{volume}}}')
+alertcondition(becameDistorted, "ARGUS Distortion Signal", '{"ticker": "{{ticker}}", "timeframe": "{{interval}}", "event_type": "distortion", "close": {{close}}, "volume": {{volume}}}')
+alertcondition(becameTrap, "ARGUS Trap Signal", '{"ticker": "{{ticker}}", "timeframe": "{{interval}}", "event_type": "trap_risk", "close": {{close}}, "volume": {{volume}}}')
+alertcondition(becameSqueeze, "ARGUS Squeeze Signal", '{"ticker": "{{ticker}}", "timeframe": "{{interval}}", "event_type": "squeeze_detected", "close": {{close}}, "volume": {{volume}}}')

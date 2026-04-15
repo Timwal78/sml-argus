@@ -14,7 +14,7 @@ from app.config import get_settings
 from app.database import set_session_factory
 from storage.models import Base
 from storage.repository import create_engine_and_session
-from routes import scan, state, integrations
+from routes import scan, state, integrations, chart, dashboard
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,6 +74,8 @@ def create_app() -> FastAPI:
     app.include_router(scan.router, tags=["Intelligence"])
     app.include_router(state.router, tags=["State & Memory"])
     app.include_router(integrations.router, tags=["Integrations"])
+    app.include_router(chart.router, tags=["Chart Surface"])
+    app.include_router(dashboard.router, tags=["Dashboard"])
 
     # ── Health ────────────────────────────────────────────────────────────────
     @app.get("/", tags=["System"])

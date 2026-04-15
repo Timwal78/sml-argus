@@ -1,0 +1,195 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// SML ARGUS — Bias Radar
+// Pine Script v5 | © ScriptMasterLabs
+//
+// Visual field report on the main chart: Pressure Bias, Stability Grade,
+// Event Risk probabilities, and the current Alert Mode. Matches the
+// Discord embed color palette for brand consistency.
+// ─────────────────────────────────────────────────────────────────────────────
+
+//@version=5
+indicator("SML ARGUS — Bias Radar", shorttitle="ARGUS Radar", overlay=true)
+
+// ── Inputs ───────────────────────────────────────────────────────────────────
+i_rsiLen       = input.int(14, "RSI Length", minval=2, maxval=50)
+i_atrLen       = input.int(14, "ATR Length", minval=2, maxval=50)
+i_volLen       = input.int(20, "Volume MA Length", minval=5, maxval=100)
+i_macdFast     = input.int(12, "MACD Fast")
+i_macdSlow     = input.int(26, "MACD Slow")
+i_macdSignal   = input.int(9, "MACD Signal")
+i_bbLen        = input.int(20, "BB Length", minval=5, maxval=100)
+i_bbMult       = input.float(2.0, "BB Multiplier", minval=0.5, maxval=5.0, step=0.1)
+i_tablePos     = input.string("Top Right", "Table Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"])
+
+// ── Colors — Discord Embed Palette ──────────────────────────────────────────
+c_bullish      = #00FF88
+c_unstBullish  = #FFD700
+c_bearish      = #FF4444
+c_unstBearish  = #FF8800
+c_neutral      = #8888AA
+c_fractured    = #CC44FF
+
+c_stable       = #00FF88
+c_fragile      = #FFD700
+c_distorted    = #CC44FF
+c_breaking     = #FF0044
+
+c_muted        = #666688
+c_bright       = #FFFFFF
+
+// ── Core Calculations (mirrors Veil Overlay) ─────────────────────────────────
+rsiVal  = ta.rsi(close, i_rsiLen)
+atrVal  = ta.atr(i_atrLen)
+volRatio = volume / ta.sma(volume, i_volLen)
+
+[macdLine, signalLine, histLine] = ta.macd(close, i_macdFast, i_macdSlow, i_macdSignal)
+
+bbBasis = ta.sma(close, i_bbLen)
+bbDev   = i_bbMult * ta.stdev(close, i_bbLen)
+bbUpper = bbBasis + bbDev
+bbLower = bbBasis - bbDev
+bbWidth = (bbUpper - bbLower) / bbBasis * 100
+
+vwapVal  = ta.vwap(hlc3)
+vwapBias = (close - vwapVal) / atrVal
+
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+
+// ── Agent Scores ─────────────────────────────────────────────────────────────
+pressureRaw = (rsiVal - 50) * 0.4 + math.min(volRatio - 1, 2) * 15 + vwapBias * 8
+pressureScore = math.max(0, math.min(100, 50 + pressureRaw))
+
+trendIntact = close > ema20 and ema20 > ema50 ? 1.0 : close < ema20 and ema20 < ema50 ? -1.0 : 0.0
+macdMomentum = macdLine > signalLine ? 1.0 : -1.0
+structureScore = math.max(0, math.min(100, 50 + trendIntact * 20 + macdMomentum * 10 + (rsiVal - 50) * 0.2))
+
+avgDirectional = (pressureScore + structureScore) / 2
+
+// ── Bias Classification ─────────────────────────────────────────────────────
+rsiOverbought   = rsiVal > 70
+rsiOversold     = rsiVal < 30
+volExtreme      = volRatio > 2.5
+agentSpread     = math.abs(pressureScore - structureScore)
+
+biasText = avgDirectional > 65 and not rsiOverbought ? "BULLISH" :
+           avgDirectional > 55 and rsiOverbought ? "UNSTABLE BULL" :
+           avgDirectional < 35 and not rsiOversold ? "BEARISH" :
+           avgDirectional < 45 and rsiOversold ? "UNSTABLE BEAR" :
+           agentSpread > 30 ? "FRACTURED" :
+           "NEUTRAL"
+
+biasColor = biasText == "BULLISH" ? c_bullish :
+            biasText == "UNSTABLE BULL" ? c_unstBullish :
+            biasText == "BEARISH" ? c_bearish :
+            biasText == "UNSTABLE BEAR" ? c_unstBearish :
+            biasText == "FRACTURED" ? c_fractured :
+            c_neutral
+
+biasEmoji = biasText == "BULLISH" ? "🟢" :
+            biasText == "UNSTABLE BULL" ? "🟡" :
+            biasText == "BEARISH" ? "🔴" :
+            biasText == "UNSTABLE BEAR" ? "🟠" :
+            biasText == "FRACTURED" ? "🔀" :
+            "⬜"
+
+// ── Stability Grade ──────────────────────────────────────────────────────────
+bbSqueeze     = bbWidth < ta.sma(bbWidth, 50) * 0.6
+atrNorm       = atrVal / close * 100
+atrExtreme    = atrNorm > ta.sma(atrNorm, 50) * 1.8
+
+rsiDivBull  = close < close[5] and rsiVal > rsiVal[5]
+rsiDivBear  = close > close[5] and rsiVal < rsiVal[5]
+anomalyActive = rsiDivBull or rsiDivBear or (volRatio > 3.0 and math.abs(close - open) / atrVal > 2.0)
+
+stabilityText = atrExtreme and anomalyActive ? "BREAKING" :
+                anomalyActive ? "DISTORTED" :
+                atrExtreme or volExtreme ? "FRAGILE" :
+                "STABLE"
+
+stabilityColor = stabilityText == "STABLE" ? c_stable :
+                 stabilityText == "FRAGILE" ? c_fragile :
+                 stabilityText == "DISTORTED" ? c_distorted :
+                 c_breaking
+
+stabilityEmoji = stabilityText == "STABLE" ? "✅" :
+                 stabilityText == "FRAGILE" ? "⚠️" :
+                 stabilityText == "DISTORTED" ? "🌀" :
+                 "💥"
+
+// ── Event Risk Assessment ────────────────────────────────────────────────────
+riskExpansion = bbSqueeze and volRatio > 1.5 ? 0.75 : bbSqueeze ? 0.55 : volRatio > 1.5 ? 0.35 : 0.15
+riskReversal  = (rsiOverbought or rsiOversold) and anomalyActive ? 0.65 : rsiOverbought or rsiOversold ? 0.40 : 0.15
+riskSqueeze   = bbSqueeze and agentSpread < 15 ? 0.70 : bbSqueeze ? 0.45 : 0.10
+riskTrap      = biasText == "FRACTURED" ? 0.55 : stabilityText == "DISTORTED" ? 0.45 : anomalyActive ? 0.30 : 0.10
+
+dominantRisk  = riskExpansion >= riskReversal and riskExpansion >= riskSqueeze and riskExpansion >= riskTrap ? "EXPANSION" :
+                riskReversal >= riskSqueeze and riskReversal >= riskTrap ? "REVERSAL" :
+                riskSqueeze >= riskTrap ? "SQUEEZE" : "TRAP"
+
+// ── Veil Score for Alert Mode ────────────────────────────────────────────────
+rawVeil = pressureScore * 0.30 + structureScore * 0.25 + math.max(0, math.min(100, 35 + (rsiVal > 75 or rsiVal < 25 ? 15 : 0) + (volRatio > 2.5 ? 12 : 0))) * 0.15 + math.max(0, math.min(100, 20 + (anomalyActive ? 20 : 0) + (volRatio > 3.0 ? 18 : 0))) * 0.15 + math.max(0, math.min(100, 30 + (bbSqueeze ? 20 : 0))) * 0.15
+veilSmooth = ta.ema(rawVeil, 3)
+
+alertModeText = stabilityText == "BREAKING" ? "REGIME BREAK" :
+                anomalyActive and veilSmooth > 55 ? "DISTORTION" :
+                veilSmooth >= 82 ? "TRIGGER ARMED" :
+                biasText == "FRACTURED" ? "TRAP RISK" :
+                bbSqueeze and veilSmooth > 50 ? "COMPRESSION" :
+                veilSmooth >= 62 ? "ESCALATION" :
+                "OBSERVATION"
+
+// ── Table Position ───────────────────────────────────────────────────────────
+tablePos = i_tablePos == "Top Right" ? position.top_right :
+           i_tablePos == "Top Left" ? position.top_left :
+           i_tablePos == "Bottom Right" ? position.bottom_right :
+           position.bottom_left
+
+// ── Render Table ─────────────────────────────────────────────────────────────
+if barstate.islast
+    var table radar = table.new(tablePos, 3, 8, border_width=1, border_color=color.new(#FFFFFF, 85), bgcolor=color.new(#0D0D1A, 5))
+
+    // Header
+    table.cell(radar, 0, 0, "⚡ ARGUS", text_color=#CC44FF, text_size=size.normal, text_halign=text.align_left)
+    table.cell(radar, 1, 0, "BIAS RADAR", text_color=#888888, text_size=size.small)
+    table.cell(radar, 2, 0, syminfo.ticker, text_color=#FFFFFF, text_size=size.small, text_halign=text.align_right)
+
+    // Separator
+    table.cell(radar, 0, 1, "────────────", text_color=#333344, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(radar, 1, 1, "────────", text_color=#333344, text_size=size.tiny)
+    table.cell(radar, 2, 1, "──────", text_color=#333344, text_size=size.tiny)
+
+    // Bias
+    table.cell(radar, 0, 2, "Pressure Bias", text_color=c_muted, text_size=size.small, text_halign=text.align_left)
+    table.cell(radar, 1, 2, biasEmoji, text_size=size.small)
+    table.cell(radar, 2, 2, biasText, text_color=biasColor, text_size=size.small, text_halign=text.align_right)
+
+    // Stability
+    table.cell(radar, 0, 3, "Stability", text_color=c_muted, text_size=size.small, text_halign=text.align_left)
+    table.cell(radar, 1, 3, stabilityEmoji, text_size=size.small)
+    table.cell(radar, 2, 3, stabilityText, text_color=stabilityColor, text_size=size.small, text_halign=text.align_right)
+
+    // Alert Mode
+    table.cell(radar, 0, 4, "Alert Mode", text_color=c_muted, text_size=size.small, text_halign=text.align_left)
+    table.cell(radar, 1, 4, "🔔", text_size=size.small)
+    table.cell(radar, 2, 4, alertModeText, text_color=veilSmooth >= 72 ? c_bearish : veilSmooth >= 55 ? c_unstBullish : c_muted, text_size=size.small, text_halign=text.align_right)
+
+    // Dominant Risk
+    table.cell(radar, 0, 5, "Dominant Risk", text_color=c_muted, text_size=size.small, text_halign=text.align_left)
+    table.cell(radar, 1, 5, "⚠️", text_size=size.small)
+    table.cell(radar, 2, 5, dominantRisk, text_color=dominantRisk == "TRAP" ? c_fractured : dominantRisk == "REVERSAL" ? c_bearish : c_unstBullish, text_size=size.small, text_halign=text.align_right)
+
+    // Veil Score
+    veilBar = ""
+    filledBlocks = math.floor(veilSmooth / 10)
+    for i = 0 to 9
+        veilBar := veilBar + (i < filledBlocks ? "█" : "░")
+
+    table.cell(radar, 0, 6, "Veil Score", text_color=c_muted, text_size=size.small, text_halign=text.align_left)
+    table.cell(radar, 1, 6, veilBar, text_color=veilSmooth >= 72 ? c_bearish : veilSmooth >= 55 ? c_unstBullish : c_muted, text_size=size.tiny)
+    table.cell(radar, 2, 6, str.tostring(veilSmooth, "#.0"), text_color=c_bright, text_size=size.small, text_halign=text.align_right)
+
+    // Footer
+    table.cell(radar, 0, 7, "SML", text_color=#333344, text_size=size.tiny, text_halign=text.align_left)
+    table.cell(radar, 1, 7, "", text_size=size.tiny)
+    table.cell(radar, 2, 7, "ScriptMasterLabs", text_color=#333344, text_size=size.tiny, text_halign=text.align_right)
