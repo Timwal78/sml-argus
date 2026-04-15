@@ -1,4 +1,4 @@
-﻿"""
+"""
 ARGUS — Perception Layer
 Normalizes raw market data into a feature packet for the agent layer.
 """
@@ -94,49 +94,3 @@ def build_features_from_pine(
     )
 
 
-def build_synthetic_features(ticker: str, timeframe: str) -> MarketFeatures:
-    """
-    Generate synthetic features for development / demo mode.
-    In production, replace this with real data feed adapters.
-    """
-    import random
-    import hashlib
-
-    # Deterministic seed per ticker+timeframe for reproducibility in tests
-    seed = int(hashlib.md5(f"{ticker}{timeframe}".encode()).hexdigest(), 16) % (2**32)
-    rng = random.Random(seed)
-
-    close = rng.uniform(5.0, 500.0)
-    atr = close * rng.uniform(0.005, 0.04)
-    bb_width = rng.uniform(0.01, 0.08)
-    rsi = rng.uniform(20, 80)
-    volume_surge = rng.uniform(0.5, 3.5)
-
-    compression = bb_width < 0.03
-    expansion = bb_width > 0.055
-
-    return MarketFeatures(
-        ticker=ticker,
-        timeframe=timeframe,
-        close=close,
-        open=close * rng.uniform(0.97, 1.03),
-        high=close * rng.uniform(1.00, 1.04),
-        low=close * rng.uniform(0.96, 1.00),
-        volume=rng.uniform(500_000, 50_000_000),
-        atr=atr,
-        atr_pct=(atr / close) * 100,
-        bb_width=bb_width,
-        range_pct=rng.uniform(0.5, 5.0),
-        rsi=rsi,
-        rsi_divergence=rng.uniform(-15, 15),
-        macd_hist=rng.uniform(-2, 2),
-        above_vwap=rng.random() > 0.45,
-        trend_intact=rng.random() > 0.35,
-        recent_pivot_break=rng.random() > 0.75,
-        compression_detected=compression,
-        expansion_detected=expansion,
-        volume_surge=volume_surge,
-        price_velocity=rng.uniform(-3, 3),
-        gap_up=rng.random() > 0.88,
-        gap_down=rng.random() > 0.90,
-    )

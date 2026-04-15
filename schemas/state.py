@@ -6,6 +6,7 @@ from enum import Enum
 from typing import List, Optional, Dict
 from pydantic import BaseModel, Field
 from datetime import datetime
+from schemas.echo_context import EchoContext
 
 
 # ─── Enumerations ─────────────────────────────────────────────────────────────
@@ -98,7 +99,6 @@ class DataSource(str, Enum):
     YFINANCE = "yfinance"        # free, default
     POLYGON = "polygon"          # BYOK
     ALPHAVANTAGE = "alphavantage"  # BYOK
-    SYNTHETIC = "synthetic"      # dev/test
 
 
 # ─── Scan Request ─────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ class ScanRequest(BaseModel):
     # Users on paid tiers can supply their own API keys for premium data sources
     data_source: DataSource = DataSource.YFINANCE
     polygon_key: Optional[str] = Field(None, description="BYOK: Your Polygon.io API key")
-    alphavantage_key: Optional[str] = Field(None, description="BYOK: Your Alpha Vantage API key")
+    alpha_vantage_key: Optional[str] = Field(None, description="BYOK: Your Alpha Vantage API key")
 
 
 # ─── Scan Response ────────────────────────────────────────────────────────────
@@ -132,6 +132,10 @@ class ScanResponse(BaseModel):
     memory_note: Optional[str] = None
     data_source: str = "yfinance"
     scanned_at: datetime = Field(default_factory=datetime.utcnow)
+    # ── ECHO FORGE context ───────────────────────────────────────────────────
+    # Present when ECHO_FORGE_URL is configured and the service is reachable.
+    # None when ECHO FORGE is disabled, unreachable, or returns low confidence.
+    echo_context: Optional[EchoContext] = None
 
 
 # ─── State History ────────────────────────────────────────────────────────────

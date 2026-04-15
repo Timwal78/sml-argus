@@ -48,6 +48,23 @@ class Settings(BaseSettings):
     anomaly_boost_threshold: float = 85.0
     anomaly_boost_value: float = 7.0
 
+    # ── ECHO FORGE integration ────────────────────────────────────────────────
+    # Set to the ECHO FORGE service URL to enable cross-asset pattern memory.
+    # Empty string = ECHO FORGE disabled (ARGUS runs in standalone mode).
+    # Local dev: http://localhost:8001
+    # Docker:    http://echo-forge:8001
+    # Render:    https://your-echo-forge-service.onrender.com
+    echo_forge_url: str = ""
+    echo_forge_timeout: int = 15  # seconds before giving up on ECHO FORGE call
+
+    # If echo confidence falls below this threshold, ARGUS ignores the echo
+    # context entirely and relies solely on its own real-time analysis.
+    echo_confidence_threshold: float = 0.5
+
+    # If failure_risk_score exceeds this threshold, ARGUS enters defensive mode:
+    # veil_score is penalised and the narrative flags elevated risk.
+    echo_defensive_risk_threshold: float = 0.6
+
     class Config:
         env_file = ".env"
 

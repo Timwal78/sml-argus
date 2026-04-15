@@ -1,26 +1,23 @@
 """
-ARGUS — Data Adapter
-Unified market data fetching layer.
-
 Priority order:
-  1. BYOK Polygon.io (if user provides key)
-  2. BYOK Alpha Vantage (if user provides key)
-  3. yfinance (free, always available, default)
-  4. Synthetic (dev/test fallback)
+  1. Polygon.io (Primary Institutional Feed)
+  2. Alpha Vantage (Secondary)
+  3. yfinance (Tertiary/Free)
 
 Usage:
     features = await fetch_features(ticker="AMC", timeframe="1h")
-    features = await fetch_features(ticker="AMC", timeframe="1h",
-                                    polygon_key="abc123")  # BYOK
 """
+
 from __future__ import annotations
 import logging
 from typing import Optional
 import asyncio
 
-from core.perception import MarketFeatures, build_synthetic_features
+from core.perception import MarketFeatures
+from app.config import get_settings
 
 logger = logging.getLogger("argus.data")
+settings = get_settings()
 
 # Timeframe mapping: ARGUS format → yfinance period/interval
 _YF_INTERVAL_MAP = {
@@ -34,40 +31,38 @@ _YF_INTERVAL_MAP = {
     "1w":  ("5y",   "1wk"),
 }
 
-
 async def fetch_features(
     ticker: str,
     timeframe: str = "1d",
     polygon_key: Optional[str] = None,
-    alphavantage_key: Optional[str] = None,
-    use_synthetic: bool = False,
+    alpha_vantage_key: Optional[str] = None,
 ) -> MarketFeatures:
     """
     Main entry point for market data.
-    Returns a fully computed MarketFeatures packet ready for the agent layer.
+    STRICT DATA INTEGRITY: Synthetic fallback removed.
     """
-    if use_synthetic:
-        return build_synthetic_features(ticker, timeframe)
-
-    # BYOK priority
+    # Priority 1: Polygon.io
+    polygon_key = polygon_key or settings.polygon_key
     if polygon_key:
         try:
             return await _fetch_polygon(ticker, timeframe, polygon_key)
         except Exception as e:
-            logger.warning(f"Polygon BYOK failed for {ticker}: {e}. Falling back to yfinance.")
+            logger.warning(f"Polygon failed for {ticker}: {e}. Trying fallbacks.")
 
-    if alphavantage_key:
+    # Priority 2: Alpha Vantage
+    alpha_vantage_key = alpha_vantage_key or settings.alpha_vantage_key
+    if alpha_vantage_key:
         try:
-            return await _fetch_alphavantage(ticker, timeframe, alphavantage_key)
+            return await _fetch_alphavantage(ticker, timeframe, alpha_vantage_key)
         except Exception as e:
-            logger.warning(f"Alpha Vantage BYOK failed for {ticker}: {e}. Falling back to yfinance.")
+            logger.warning(f"Alpha Vantage failed for {ticker}: {e}. Trying yfinance.")
 
-    # Default: yfinance (free)
+    # Priority 3: yfinance (Free)
     try:
         return await _fetch_yfinance(ticker, timeframe)
     except Exception as e:
-        logger.error(f"yfinance failed for {ticker}/{timeframe}: {e}. Using synthetic fallback.")
-        return build_synthetic_features(ticker, timeframe)
+        logger.error(f"yfinance failed for {ticker}/{timeframe}: {e}.")
+        raise ValueError(f"CRITICAL: Failed to fetch institutional-grade data for {ticker}. Check API keys.")
 
 
 async def _fetch_yfinance(ticker: str, timeframe: str) -> MarketFeatures:
@@ -85,8 +80,23 @@ async def _fetch_yfinance(ticker: str, timeframe: str) -> MarketFeatures:
                             progress=False, auto_adjust=True)
     )
 
-    if df is None or df.empty or len(df) < 20:
-        raise ValueError(f"Insufficient data from yfinance for {ticker}/{timeframe}")
+    if df is None or df.empty:
+        logger.error(f"yfinance: Zero data returned for {ticker} ({timeframe}).")
+        raise ValueError(f"yfinance returned empty data for {ticker}/{timeframe}")
+
+    if len(df) < 14:
+        logger.warning(f"yfinance: Insufficient history for {ticker} ({len(df)} bars).")
+        # Try to expand the period if it's too short
+        period = "max"
+        df = await loop.run_in_executor(
+            None,
+            lambda: yf.download(ticker, period=period, interval=interval,
+                                progress=False, auto_adjust=True)
+        )
+        if df is None or df.empty or len(df) < 14:
+            raise ValueError(f"yfinance: Insufficient history even with max period for {ticker}")
+
+    logger.info(f"yfinance: Successfully fetched {len(df)} bars for {ticker} ({timeframe})")
 
     return _compute_features_from_ohlcv(ticker, timeframe, df)
 

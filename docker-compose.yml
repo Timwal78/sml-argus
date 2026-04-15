@@ -1,6 +1,18 @@
-﻿version: "3.9"
+version: "3.9"
+
+# SML Intelligence Stack
+# Boot order: db + redis → echo-forge → argus
+# Usage: docker compose up --build
+#
+# Services:
+#   argus      — ARGUS intelligence organism (port 8000)
+#   echo-forge — ECHO FORGE pattern memory engine (port 8001)
+#   db         — Shared Postgres 15 instance
+#   redis      — Redis 7 for scan caching
 
 services:
+
+  # ── ARGUS — Decision-layer intelligence system ───────────────────────────────
   argus:
     build: .
     ports:
@@ -8,25 +20,63 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://nexus:nexus@db:5432/nexusveil
       - REDIS_URL=redis://redis:6379/0
-      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - POLYGON_KEY=${POLYGON_KEY:-}
+      - ALPHA_VANTAGE_KEY=${ALPHA_VANTAGE_KEY:-}
+      # ECHO FORGE integration — ARGUS calls this URL to fetch pattern context
+      - ECHO_FORGE_URL=http://echo-forge:8001
+      - ECHO_FORGE_TIMEOUT=15
+      - ECHO_CONFIDENCE_THRESHOLD=0.5
+      - ECHO_DEFENSIVE_RISK_THRESHOLD=0.6
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      echo-forge:
+        condition: service_started
     volumes:
       - .:/app
     restart: unless-stopped
 
+  # ── ECHO FORGE — Cross-asset pattern memory oracle ───────────────────────────
+  echo-forge:
+    build:
+      context: ../echo-forge/echo-forge
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://nexus:nexus@db:5432/echoforge
+      - POLYGON_KEY=${POLYGON_KEY:-}
+      - ECHO_FORGE_DEBUG=false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  # ── Postgres ─────────────────────────────────────────────────────────────────
   db:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: nexus
       POSTGRES_PASSWORD: nexus
-      POSTGRES_DB: nexusveil
+      # Both services get their own database on the same Postgres instance
+      POSTGRES_MULTIPLE_DATABASES: nexusveil,echoforge
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # ── Redis ─────────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     ports:

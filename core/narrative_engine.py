@@ -1,15 +1,15 @@
-﻿"""
+"""
 ARGUS — Narrative Engine
 Converts machine state into high-conviction, branded intelligence briefings.
 Output tone: classified briefings, machine intuition, field reports.
 Not chatty. Not robotic. Not generic.
 """
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, List
 from schemas.state import (
     PressureBias, StabilityGrade, VeilState, AlertMode, EventRisk, AgentResult
 )
-from typing import List
+from schemas.echo_context import EchoContext
 
 
 # ── Bias language map ──────────────────────────────────────────────────────────
@@ -65,9 +65,12 @@ def generate_briefing(
     agents: List[AgentResult],
     memory_matched: bool = False,
     memory_note: Optional[str] = None,
+    echo_context: Optional[EchoContext] = None,
 ) -> str:
     """
     Generates a high-conviction narrative briefing for the current state.
+    When echo_context is provided with sufficient confidence, appends an
+    ECHO FORGE structural memory paragraph.
     """
     parts = []
 
@@ -131,4 +134,79 @@ def generate_briefing(
     if suffix:
         parts.append(suffix)
 
+    # ── ECHO FORGE structural memory paragraph ─────────────────────────────────
+    # Appended only when echo confidence meets the threshold.
+    echo_paragraph = _build_echo_paragraph(ticker, echo_context)
+    if echo_paragraph:
+        parts.append(echo_paragraph)
+
     return " ".join(parts)
+
+
+def _build_echo_paragraph(
+    ticker: str,
+    echo_context: Optional[EchoContext],
+) -> Optional[str]:
+    """
+    Build the ECHO FORGE structural memory summary paragraph.
+    Returns None if echo context is absent or low-confidence.
+
+    Format (example):
+      ECHO FORGE | AMC on 1h: late_stage_compression structure (74% confidence,
+      20 echoes). Historical resolution — continuation: 68%, reversal: 22%,
+      failure: 10%. Primary scenario: explosive_continuation (45% prob,
+      expected +12.0%, 3–5 sessions). Failure risk: 31% [⚠ return distribution
+      is non-normal]. Cross-asset conflict detected — regime direction is
+      contested in correlated instruments.
+    """
+    if not echo_context or echo_context.low_confidence:
+        return None
+
+    lines: list[str] = []
+
+    # Headline
+    conf_pct = int(echo_context.confidence * 100)
+    headline = (
+        f"ECHO FORGE | {ticker}: {echo_context.echo_type} structure "
+        f"({conf_pct}% confidence, {echo_context.n_matches} echoes)."
+    )
+    lines.append(headline)
+
+    # Outcome distribution
+    dist = echo_context.outcome_distribution
+    dist_str = (
+        f"Historical resolution — continuation: {dist.continuation:.0%}, "
+        f"reversal: {dist.reversal:.0%}, failure: {dist.failure:.0%}."
+    )
+    lines.append(dist_str)
+
+    # Primary scenario
+    proj = echo_context.projection
+    if proj and proj.primary_scenario:
+        sc = proj.primary_scenario
+        ret_pct = sc.expected_return * 100
+        ret_sign = "+" if ret_pct >= 0 else ""
+        scenario_str = (
+            f"Primary scenario: {sc.label} "
+            f"({sc.probability:.0%} prob, expected {ret_sign}{ret_pct:.1f}%, "
+            f"{sc.time_to_resolution})."
+        )
+        lines.append(scenario_str)
+
+    # Failure risk
+    fa = echo_context.failure_analysis
+    if fa:
+        risk_str = f"Failure risk: {fa.failure_rate:.0%}."
+        if fa.divergence_signals:
+            # Append the first divergence signal as a concise inline warning
+            risk_str += f" [⚠ {fa.divergence_signals[0].lower().rstrip('.')}]"
+        lines.append(risk_str)
+
+    # Cross-asset conflict
+    if echo_context.cross_asset_conflict:
+        lines.append(
+            "Cross-asset conflict detected — identical structure is resolving "
+            "bearishly in correlated instruments. Regime direction is contested."
+        )
+
+    return " ".join(lines)
