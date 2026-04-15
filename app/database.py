@@ -1,4 +1,4 @@
-﻿"""
+"""
 ARGUS — Database Dependency
 Singleton session factory, shared across all route modules.
 """
@@ -21,3 +21,8 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         raise RuntimeError("Session factory not initialized")
     async with _session_factory() as session:
         yield session
+
+
+def get_session_factory() -> Optional[async_sessionmaker]:
+    """Return the session factory for background tasks (like the auto-sweep scheduler)."""
+    return _session_factory

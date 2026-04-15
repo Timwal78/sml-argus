@@ -4,6 +4,7 @@ The organism awakens here.
 """
 from __future__ import annotations
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -15,6 +16,7 @@ from app.database import set_session_factory
 from storage.models import Base
 from storage.repository import create_engine_and_session
 from routes import scan, state, integrations, chart, dashboard, directive, radar
+from core.scheduler import auto_sweep_loop
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,8 +28,7 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Start-up: create DB tables and session factory."""
-    global _session_factory
+    """Start-up: create DB tables, session factory, and auto-sweep scheduler."""
     logger.info("ARGUS — Organism initializing...")
 
     engine, session_factory = create_engine_and_session(settings.database_url)
@@ -38,10 +39,21 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
 
     logger.info("Database initialized.")
+
+    # Start auto-sweep scheduler as background task
+    sweep_task = asyncio.create_task(auto_sweep_loop(app))
+    logger.info("Auto-sweep scheduler launched (15m intervals during market hours).")
+
     logger.info("ARGUS — Organism online. Hidden state detection active.")
 
     yield  # app runs
 
+    # Shutdown: cancel background task
+    sweep_task.cancel()
+    try:
+        await sweep_task
+    except asyncio.CancelledError:
+        pass
     logger.info("ARGUS — Organism shutting down.")
     await engine.dispose()
 
