@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     alpha_vantage_key: str = ""
     polygon_key: str = ""
 
+    # Schwab API
+    schwab_app_key: str = ""
+    schwab_app_secret: str = ""
+    schwab_callback_url: str = "http://127.0.0.1:8000/schwab/callback"
+    schwab_tokens_path: str = "schwab_tokens.json"
+    schwab_paper_mode: bool = True
+    schwab_risk_per_trade_usd: float = 1000.0
+
     # S3 Credit Gate
     free_tier_daily_scans: int = 3
     paid_tier_daily_scans: int = 100

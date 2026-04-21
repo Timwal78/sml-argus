@@ -7,13 +7,14 @@ Delegates to core.engine.run_full_cycle which handles:
   Echo Modulation → Debate → Narrative → Persist → Alert
 """
 from __future__ import annotations
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from schemas.state import ScanRequest, ScanResponse, DataSource
 from core.engine import run_full_cycle
 from app.config import get_settings
 from app.database import get_session
+from integrations.s3_credit_gate import check_access
 
 router = APIRouter()
 settings = get_settings()
@@ -23,9 +24,10 @@ settings = get_settings()
 async def scan_ticker(
     request: ScanRequest,
     session: AsyncSession = Depends(get_session),
+    x_user_id: str = Header(default="anonymous_user"),
 ) -> ScanResponse:
-    """
-    Core endpoint — runs the full ARGUS intelligence cycle.
+    """Core endpoint — protected by S3 Credit Gate."""
+    await check_access(user_id=x_user_id, endpoint="scan", session=session)
 
     Pipeline (inside core/engine.py):
       Step 0  — Concurrent fetch: market data + ECHO FORGE echo context

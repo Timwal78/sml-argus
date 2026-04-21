@@ -61,6 +61,13 @@
         .mode-tab:hover { color: var(--text-secondary); }
         .mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+        /* Schwab Status */
+        .schwab-status { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.03); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); }
+        .schwab-badge { font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+        .schwab-badge.live { background: var(--red); color: white; }
+        .schwab-badge.paper { background: var(--accent2); color: white; }
+        .btn-auth { background: #00A3E0; color: white; font-size: 11px; padding: 6px 12px; }
+
         /* Directive Hero */
         .directive-hero { margin: 0 24px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px 32px; position: relative; overflow: hidden; }
         .directive-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
@@ -140,6 +147,21 @@
         .overlay-sub { font-size: 12px; color: var(--text-muted); margin-top: 8px; font-family: var(--mono); }
         .footer { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
         .footer-text { font-size: 11px; color: var(--text-muted); }
+        /* ── Positions ────────────────────────────────────────────────── */
+        .positions-sec { margin: 0 24px 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .positions-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .positions-title { font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--text-primary); text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+        .positions-table { width: 100%; border-collapse: collapse; }
+        .positions-table th { text-align: left; padding: 12px 20px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+        .positions-table td { padding: 16px 20px; font-size: 14px; border-bottom: 1px solid var(--border); font-family: var(--mono); }
+        .pos-type { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-right: 8px; }
+        .pos-type.paper { background: rgba(91,140,255,0.15); color: var(--accent2); }
+        .pos-type.live { background: rgba(255,48,48,0.15); color: var(--red); }
+        .pnl-pos { color: var(--green); }
+        .pnl-neg { color: var(--red); }
+        .btn-close { padding: 6px 12px; font-size: 11px; font-weight: 700; border-radius: 6px; background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
+        .btn-close:hover { background: var(--red); color: white; border-color: var(--red); }
+
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         .anim { animation: fadeUp 0.4s ease-out forwards; opacity: 0; }
         .d1 { animation-delay: 0.05s; } .d2 { animation-delay: 0.1s; } .d3 { animation-delay: 0.15s; } .d4 { animation-delay: 0.2s; } .d5 { animation-delay: 0.25s; }
@@ -161,6 +183,12 @@
                 </div>
             </div>
             <div class="status">
+                <div id="schwabInfo" class="schwab-status" style="margin-right: 16px;">
+                    <span id="schwabMode" class="schwab-badge paper">Paper Mode</span>
+                    <span id="schwabConn" class="status-text">DISCONNECTED</span>
+                    <button id="schwabAuthBtn" class="btn btn-auth" style="display:none;" onclick="authorizeSchwab()">Authorize</button>
+                    <button id="schwabToggleBtn" class="btn" style="font-size: 10px; padding: 4px 8px; border: 1px solid var(--border);" onclick="toggleSchwabMode()">⚙️</button>
+                </div>
                 <div class="status-dot"></div>
                 <span class="status-text">ORGANISM ONLINE</span>
             </div>
@@ -179,14 +207,31 @@
         </div>
 
         <div id="content">
-            <div class="empty">
-                <div class="empty-icon">👁️</div>
-                <div class="empty-title">ARGUS is the brain. You are the hands.</div>
-                <div class="empty-sub">
-                    <b>⚡ SCAN</b> — type a ticker, get a trade directive<br>
-                    <b>📡 RADAR SWEEP</b> — auto-scan AMC, GME, IWM, SPY + discover movers<br><br>
-                    You decide if you pull the trigger.
-                </div>
+            </div>
+        </div>
+
+        <div id="positions" class="positions-sec anim d4" style="display:none;">
+            <div class="positions-header">
+                <div class="positions-title">🎯 Active Engagements</div>
+                <button class="btn" style="background:transparent; color:var(--text-muted); font-size:11px;" onclick="updatePositions()">↻ Refresh</button>
+            </div>
+            <div id="positionsList">
+                <table class="positions-table">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Type</th>
+                            <th>Entry</th>
+                            <th>Current</th>
+                            <th>Qty</th>
+                            <th>PnL %</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positionsBody">
+                        <!-- Dynamic -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -306,6 +351,11 @@
                         ${d.target_2 ? `<div class="level-box"><div class="level-label">Target 2</div><div class="level-value blue">$${d.target_2.toFixed(2)}</div></div>` : ''}
                         <div class="level-box"><div class="level-label">Risk Grade</div><div class="level-value" style="color:${riskColor}">${d.risk_emoji} ${d.risk_grade}</div></div>
                         <div class="level-box"><div class="level-label">Position Size</div><div class="level-value" style="color:${sizeColors[d.position_size] || '#888'}">${d.position_size}</div></div>
+                    </div>
+                    
+                    <!-- Schwab Execution Action -->
+                    <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
+                        <button class="btn btn-scan" id="execBtn" onclick="executeTrade('${d.ticker}')" style="background: linear-gradient(135deg, #FF6600, #FF0044); width: 100%; max-width: 200px;">🚀 EXECUTE TRADE</button>
                     </div>
                 </div>
                 <div class="detail-row">
@@ -429,6 +479,128 @@
                 strip.innerHTML = agents.map(a => `<div class="agent-mini"><div style="font-size:16px">${a.icon}</div><div class="agent-mini-name">${a.name}</div><div class="agent-mini-score" style="color:${a.color}">${a.score.toFixed(0)}</div><div class="agent-mini-bar"><div class="agent-mini-fill" style="width:${a.score}%;background:${a.color}"></div></div></div>`).join('');
             } catch (e) { strip.innerHTML = '<div style="color:var(--text-muted);font-size:12px;grid-column:1/-1;text-align:center">Loading...</div>'; }
         }
+
+        // ── Schwab Integration ─────────────────────────────────────────
+        let schwabAuthUrl = "";
+
+        async function updateSchwabStatus() {
+            try {
+                const resp = await fetch('/schwab/status');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                
+                const connText = $('schwabConn');
+                const authBtn = $('schwabAuthBtn');
+                const modeBadge = $('schwabMode');
+                
+                if (data.connected) {
+                    connText.textContent = "CONNECTED";
+                    connText.style.color = "var(--green)";
+                    authBtn.style.display = "none";
+                } else {
+                    connText.textContent = "DISCONNECTED";
+                    connText.style.color = "var(--text-muted)";
+                    authBtn.style.display = "block";
+                    schwabAuthUrl = data.auth_url;
+                }
+
+                if (data.paper_mode) {
+                    modeBadge.textContent = "Paper Mode";
+                    modeBadge.className = "schwab-badge paper";
+                } else {
+                    modeBadge.textContent = "LIVE MODE";
+                    modeBadge.className = "schwab-badge live";
+                }
+            } catch (e) { console.error("Failed to fetch Schwab status", e); }
+        }
+
+        function authorizeSchwab() {
+            if (schwabAuthUrl) window.location.href = schwabAuthUrl;
+        }
+
+        async function toggleSchwabMode() {
+            await fetch('/schwab/toggle-mode', { method: 'POST' });
+            updateSchwabStatus();
+        }
+
+        async function executeTrade(ticker) {
+            const btn = $('execBtn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = "TRANSMITTING...";
+            
+            try {
+                const resp = await fetch(`/schwab/execute/${ticker}`, { method: 'POST' });
+                const data = await resp.json();
+                
+                if (data.execution.status === "success") {
+                    alert(`✅ Trade Executed!\n${data.execution.mode.toUpperCase()} ${data.execution.direction.toUpperCase()} ${ticker}\nOrder ID: ${data.execution.order_id || 'N/A'}`);
+                    updatePositions();
+                } else {
+                    alert(`❌ Execution Failed: ${data.execution.reason || 'Unknown error'}`);
+                }
+            } catch (e) {
+                alert(`❌ Network Error: ${e.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function updatePositions() {
+            try {
+                const resp = await fetch('/schwab/positions');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                
+                const all = [...data.paper, ...data.live];
+                const panel = $('positions');
+                const body = $('positionsBody');
+                
+                if (all.length === 0) {
+                    panel.style.display = 'none';
+                    return;
+                }
+                
+                panel.style.display = 'block';
+                body.innerHTML = all.map(p => `
+                    <tr>
+                        <td><strong>${p.ticker}</strong> <span style="font-size:10px; color:var(--text-muted)">(${p.direction.toUpperCase()})</span></td>
+                        <td><span class="pos-type ${p.type}">${p.type}</span></td>
+                        <td>$${p.entry.toFixed(2)}</td>
+                        <td>$${p.current.toFixed(2)}</td>
+                        <td>${p.quantity}</td>
+                        <td class="${p.pnl_pct >= 0 ? 'pnl-pos' : 'pnl-neg'}">${p.pnl_pct >= 0 ? '+' : ''}${p.pnl_pct}%</td>
+                        <td><button class="btn-close" onclick="closePosition('${p.type}', '${p.id}', '${p.ticker}')">CLOSE</button></td>
+                    </tr>
+                `).join('');
+                
+            } catch (e) {
+                console.error("Failed to load positions", e);
+            }
+        }
+
+        async function closePosition(mode, id, ticker) {
+            if (!confirm(`Are you sure you want to close the ${mode} position for ${ticker}?`)) return;
+            
+            try {
+                const resp = await fetch(`/schwab/close/${mode}/${id}`, { method: 'POST' });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    alert(`✅ Closed ${ticker} ${mode} position.\nPnL realized: ${data.pnl ? '$' + data.pnl.toFixed(2) : 'N/A'}`);
+                    updatePositions();
+                } else {
+                    alert(`❌ Failed to close: ${data.reason || 'Unknown error'}`);
+                }
+            } catch (e) {
+                alert(`❌ Network error: ${e.message}`);
+            }
+        }
+
+        // Initialize
+        updateSchwabStatus();
+        updatePositions();
+        setInterval(updatePositions, 30000); // Auto refresh every 30s
     </script>
 </body>
 </html>

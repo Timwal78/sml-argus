@@ -1,9 +1,9 @@
-﻿"""
+"""
 ARGUS — State & Replay Routes
 GET /state/{ticker}    — latest state for a ticker
 GET /replay/{ticker}   — full history for state replay (killer feature)
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -11,6 +11,7 @@ from storage.repository import StateRepository
 from schemas.state import StateSnapshot, TickerPersonality
 from core.memory_engine import MemoryEngine
 from app.database import get_session
+from integrations.s3_credit_gate import check_access
 
 router = APIRouter()
 
@@ -41,7 +42,15 @@ async def get_replay(
     ticker: str,
     limit: int = Query(default=100, le=500),
     session: AsyncSession = Depends(get_session),
+    x_user_id: str = Header(default="anonymous_user"),
 ) -> List[StateSnapshot]:
+    """
+    State Replay: returns the full temporal history of ARGUS's internal belief.
+    (Protected by S3 Credit Gate)
+    """
+    # ── Credit Check ──────────────────────────────────────────────────────────
+    await check_access(user_id=x_user_id, endpoint="replay", session=session)
+    # ──────────────────────────────────────────────────────────────────────────
     """
     State Replay: returns the full temporal history of ARGUS's internal belief
     for a ticker, from oldest to newest. Watch how the organism saw it forming.

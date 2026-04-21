@@ -12,12 +12,40 @@ from __future__ import annotations
 import logging
 from typing import Optional
 import asyncio
+import logging
+import pandas as pd
+from typing import Optional
 
 from core.perception import MarketFeatures
 from app.config import get_settings
 
 logger = logging.getLogger("argus.data")
 settings = get_settings()
+
+async def get_latest_price(ticker: str) -> float:
+    """
+    Lightweight fetch of the most recent price.
+    Useful for paper trade entries and PnL tracking.
+    """
+    try:
+        # We use yfinance if no keys are present, as it's the fastest non-indicator fetch
+        import yfinance as yf
+        loop = asyncio.get_event_loop()
+        df = await loop.run_in_executor(
+            None,
+            lambda: yf.download(ticker, period="1d", interval="1m", progress=False, auto_adjust=True)
+        )
+        if df is not None and not df.empty:
+            if isinstance(df.columns, pd.MultiIndex):
+                return float(df["Close"].iloc[-1])
+            return float(df["Close"].iloc[-1])
+    except Exception as e:
+        logger.warning(f"Fast price fetch failed for {ticker}: {e}. Falling back to full feature fetch.")
+    
+    # Fallback to full feature fetch if fast path fails
+    feats = await fetch_features(ticker, timeframe="1m")
+    return feats.close
+
 
 # Timeframe mapping: ARGUS format → yfinance period/interval
 _YF_INTERVAL_MAP = {

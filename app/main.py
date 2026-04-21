@@ -15,7 +15,7 @@ from app.config import get_settings
 from app.database import set_session_factory
 from storage.models import Base
 from storage.repository import create_engine_and_session
-from routes import scan, state, integrations, chart, dashboard, directive, radar
+from routes import scan, state, integrations, chart, dashboard, directive, radar, schwab
 from core.scheduler import auto_sweep_loop
 
 logging.basicConfig(
@@ -90,6 +90,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard.router, tags=["Dashboard"])
     app.include_router(directive.router, tags=["Trade Directives"])
     app.include_router(radar.router, tags=["Pulse Radar"])
+    app.include_router(schwab.router, prefix="/schwab", tags=["Schwab Execution"])
 
     # ── Health ────────────────────────────────────────────────────────────────
     @app.get("/", tags=["System"])

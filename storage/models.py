@@ -1,4 +1,4 @@
-﻿"""
+"""
 ARGUS — Storage Models (SQLAlchemy)
 """
 from sqlalchemy import (
@@ -75,3 +75,21 @@ class AlertHistory(Base):
     sent_at = Column(DateTime, default=datetime.utcnow)
     success = Column(Boolean, default=True)
     error_message = Column(Text, nullable=True)
+
+
+class PaperTrade(Base):
+    __tablename__ = "paper_trades"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False, index=True)
+    direction = Column(String(10), nullable=False)  # "long" | "short"
+    quantity = Column(Float, nullable=False)
+    entry_price = Column(Float, nullable=False)
+    exit_price = Column(Float, nullable=True)
+    veil_score = Column(Float, nullable=False)
+    status = Column(String(20), default="open")  # "open" | "closed"
+    pnl = Column(Float, default=0.0)
+    opened_at = Column(DateTime, default=datetime.utcnow)
+    closed_at = Column(DateTime, nullable=True)
+    directive_id = Column(Integer, nullable=True)  # link to state_log if needed
+
