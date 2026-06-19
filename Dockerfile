@@ -13,6 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source
 COPY . .
 
+# Drop to non-root user
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+USER appuser
+
 # Expose port
 EXPOSE 8000
 
