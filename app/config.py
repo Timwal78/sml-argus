@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     app_name: str = "SML ARGUS"
     app_version: str = "0.2.0"
     debug: bool = False
-    secret_key: str = "argus-dev-secret-change-in-production"
+    secret_key: str = ""
+    cors_origins: str = ""  # comma-separated; leave empty to allow only localhost in dev
 
     # Database
     database_url: str = "sqlite:///./argus.db"
