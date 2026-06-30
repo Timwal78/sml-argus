@@ -1,0 +1,13 @@
+{
+  "name": "sml-argus",
+  "description": "ARGUS agent credit scoring and reputation system for ScriptMasterLabs",
+  "owner": "ScriptMasterLabs",
+  "github": "https://github.com/timwal78/sml-argus",
+  "contact": "scriptmasterlabs@gmail.com",
+  "sovereign": {
+    "noMockData": true,
+    "liveDataOnly": true,
+    "noTelemetry": true,
+    "enforcedBy": ".github/workflows/sovereign-data-check.yml"
+  }
+}
